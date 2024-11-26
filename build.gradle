@@ -1,0 +1,54 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.javamodularity.moduleplugin' version '1.8.12'
+}
+
+sourceSets {
+    dbConnect {
+        java {
+            srcDir 'src/main/java'
+            include 'dbConnect/**'
+        }
+    }
+}
+
+group 'Arsky.TCB'
+version '1.4'
+
+repositories {
+    flatDir {
+        dirs 'Lib'
+    }
+    mavenCentral()
+}
+
+ext {
+    junitVersion = '5.10.2'
+}
+
+sourceCompatibility = '21'
+targetCompatibility = '21'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    implementation fileTree('Lib') { include '*.jar' }
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task buildConnector(type: Jar) {
+    group = 'build'
+    description = 'Database Connector and SQL statement parser.'
+    from sourceSets.dbConnect.output
+    archiveBaseName = 'DBConnect'
+    archiveVersion = project.version
+    destinationDirectory = file("${buildDir}/libs")
+}
