@@ -4,3 +4,4 @@ dbConnect.execution
 dbConnect.models
 dbConnect.models.autogen
 dbConnect.models.enums
+dbConnect.models.notnull

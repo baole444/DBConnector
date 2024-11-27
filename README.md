@@ -23,19 +23,20 @@ dependencies {
 > [!IMPORTANT]   
 > Enums used by the system (such as table name) is statically complied at runtime and cannot be added. 
 > If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.
-> 
+
 Create a folder call `Lib` within your project and put the `DBConnect-<version>.jar` inside (You can skip this if you use the source code directly).<br>
 Make sure to also put the `mysql-connector-j-<version>.jar` inside if you don't have it as your project dependencies yet.
 
 ### Create a data model Class (modelClass):
-The current abstraction allows user to create their own data model following the supported structure.<br>
+The current abstraction allows user to create their own data model following the supported structure.
+With each attribute represent a column and its name<br>
 
 Let's take a look at a MySql Script of a table and create your model from it.
 #### Example table:
 ```sql
 -- Example table for merchandise category
 create table merch_category (
-	merch_cat_id int not null auto_increment,
+    merch_cat_id int not null auto_increment,
     merch_cat_name varchar(100) not null,
     merch_cat_taxrate decimal,
     primary key (merch_cat_id)
@@ -43,13 +44,21 @@ create table merch_category (
 ```
 
 #### Annotation for an attribute:
-Currently, the system allows two types of annotation to mark which field is managed by the database server, and which one is a primary key.<br>
-In the example, this is the `merch_cat_id` column. So we need to tell the system what it is.
-
+Currently, the system allows three types of annotation to mark which field is managed by the database server, which is a primary key and which is not null.<br>
+In the example, the `merch_cat_id` column is a primary key managed by server. So we need to tell the system what it is.
 ```java
     @AutomaticField @PrimaryField
     private int merch_cat_id;
 ```
+If you want to constrain a column's value to be not null add `@NotNullField` annotation to it.
+```java
+    @NotNullField
+    private String merch_cat_name;
+```
+
+> [!NOTE]   
+> @AutomaticField will always take priority over @NotNullField
+
 #### Table Enums class:
 Current system store table's name in enums, make sure to update `dbConnect.models.enums.Table` to included your data model. At this point, you can also update `DataModel` enum if you decided to use it.
 

@@ -41,7 +41,7 @@ public class DBConnect {
      * <ul>
      *      <li>host: {@code localhost}</li>
      *      <li>database: {@code store_db}</li>
-     *      <li>port: {@code 3306}</code></li>
+     *      <li>port: {@code 3306}</li>
      *      <li>user: {@code root}</li>
      *      <li>password: {@code root}</li>
      * </ul>
@@ -59,15 +59,15 @@ public class DBConnect {
      * Default values:
      * <ul>
      *      <li>host: {@code localhost}</li>
-     *      <li>port: {@code 3306}</code></li>
+     *      <li>port: {@code 3306}</li>
      *      <li>user: {@code root}</li>
      *      <li>password: {@code root}</li>
      * </ul>
      * </div>
      * <i><strong>Initialize method should be call before all database query tasks.</strong></i>
-     * <div>
-     * @param databaseName the {@code Name}of the database.
-     * </div>
+     *
+     * @param databaseName the {@code Name} of the database.
+     *
      */
     public static void initialize(String databaseName) {
         ConnectorString connectorString = ConnectorString.setDefaultLocalConnection(databaseName);
@@ -84,12 +84,12 @@ public class DBConnect {
      * </ul>
      * </div>
      * <i><strong>Initialize method should be called before all database query tasks.</strong></i>
-     * <div>
+     *
      * @param databaseName the {@code Name} of the database.
      * @param portNumber the {@code Port} of the database.
      * @param user the {@code Username} of database account.
      * @param password the {@code Password} of database account.
-     * </div>
+     *
      */
     public static void initialize(String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setCustomLocalConnection(databaseName, portNumber, user, password);
@@ -100,13 +100,13 @@ public class DBConnect {
      * Initialization of Database connection. <br>
      * This overload creates a connection to a database at a certain host.<br>
      * <i><strong>Initialize method should be call before all database queries task.</strong></i>
-     * <div>
+     *
      * @param host the {@code address} of the database's host machine.
      * @param databaseName the {@code Name} of the database.
      * @param portNumber the {@code Port} of the database.
      * @param user the {@code Username} of database account.
      * @param password the {@code Password} of database account.
-     * </div>
+     *
      */
     public static void initialize(String host, String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setConnection(host, databaseName, portNumber, user, password);
@@ -131,12 +131,12 @@ public class DBConnect {
      * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
      * - Invoke {@link dbConnect.execution.RetrieveParser#retrieve(Class, String, Object...)}
      * </div>
-     * <div>
+     *
      * @param modelClass a user desired {@code DataModel} class.<br>
      *                   Call ({@code DataModel.class}).
      * @param whereTerm conditions on how to search, using {@code ?} as placeholders.
      * @param params value of mentioned conditions in order.
-     * </div>
+     *
      * @return List of the desired object. If no data is found, an empty list is returned.
      * @throws Exception When there is error during retrieval of data.
      */
@@ -161,10 +161,10 @@ public class DBConnect {
      * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
      * - Invoke {@link dbConnect.execution.RetrieveParser#retrieveAll(Class)}
      * </div>
-     * <div>
+     *
      * @param modelClass a user desired {@code DataModel} class.<br>
      *                   Call ({@code DataModel.class}).
-     * </div>
+     *
      * @return List of the desired object. If no data is found, an empty list is returned.
      * @throws Exception When there is error during retrieval of data.
      */
@@ -179,9 +179,9 @@ public class DBConnect {
      * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.InsertParser}.<br>
      * - Invoke {@link dbConnect.execution.InsertParser#insert(Object)}
      * </div>
-     * <div>
+     *
      * @param model a user desired {@code dataModel} object, carrying data that need to be inserted.
-     * </div>
+     *
      * @return {@code true} if insert successfully.<br>
      *          {@code false} if insert failed. <br>
      *          Insert successful state is determined by the inserted row count.
@@ -208,9 +208,9 @@ public class DBConnect {
      * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.UpdateParser}.<br>
      * - Invoke {@link dbConnect.execution.UpdateParser#update(Object)}
      * </div>
-     * <div>
+     *
      * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
-     * </div>
+     *
      * @return {@code true} if update successfully.<br>
      *          {@code false} if update failed. <br>
      *          Update successful state is determined by the updated row count.
@@ -238,9 +238,9 @@ public class DBConnect {
      * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.DeleteParser}.<br>
      * - Invoke {@link dbConnect.execution.DeleteParser#delete(Object)}
      * </div>
-     * <div>
+     *
      * @param model a user desired {@code dataModel} object, must contain at least the primary key field initiated.
-     * </div>
+     *
      * @return {@code true} if delete successfully.<br>
      *          {@code false} if delete failed. <br>
      *          delete successful state is determined by the deleted row count.

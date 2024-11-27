@@ -26,12 +26,27 @@ public class DBQuery {
     private String user;
     private String password;
 
+    /**
+     * Constructor of {@link DBQuery}.
+     * @param dbUrl link to the database server.
+     * @param user username of the account.
+     * @param password account's password.
+     */
     public DBQuery(String dbUrl, String user, String password) {
         this.dbUrl = dbUrl;
         this.user = user;
         this.password = password;
     }
 
+    /**
+     * A low level method to fetch data from a database server.
+     * @param query SQL script, often with placeholders.
+     * @param model A Mapping method of a Data Model Class. It can be obtained via {@code getMap()}.
+     * @param params Values for placeholders in corresponding order.
+     * @return {@link List} of instances of a specified data model.
+     * @param <T> Object
+     * @throws SQLException when there is an error occurred during execution.
+     */
     public <T> List<T> loadData(String query, DBMapper<T> model, Object... params) throws SQLException {
         List<T> rows = new ArrayList<>();
 
@@ -53,6 +68,13 @@ public class DBQuery {
         return rows;
     }
 
+    /**
+     * A low level method to update data with a database server.
+     * @param query SQL script, often with placeholders.
+     * @param params Values for placeholders in corresponding order.
+     * @return count of successful execution.
+     * @throws SQLException when there is an error occurred during execution.
+     */
     public int setData(String query, Object... params) throws SQLException{
         try (Connection conn = DriverManager.getConnection(dbUrl, user, password);
              PreparedStatement preparedStatement = conn.prepareStatement(query);) {

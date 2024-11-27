@@ -14,7 +14,7 @@ sourceSets {
 }
 
 group 'Arsky.TCB'
-version '1.4'
+version '1.5'
 
 repositories {
     flatDir {
@@ -51,4 +51,25 @@ task buildConnector(type: Jar) {
     archiveBaseName = 'DBConnect'
     archiveVersion = project.version
     destinationDirectory = file("${buildDir}/libs")
+}
+
+task buildJavadoc(type: Javadoc) {
+    group = 'documentation'
+    description = 'Generate JavaDoc.'
+    source = sourceSets.dbConnect.allJava
+    classpath = sourceSets.dbConnect.compileClasspath
+    destinationDir = file("${buildDir}/docs/javadoc")
+}
+
+task javadocJar(type: Jar) {
+    group = 'documentation'
+    description = 'Turn html generated documents to jar file.'
+    dependsOn buildJavadoc
+    from buildJavadoc.destinationDir
+    archiveClassifier.set('javadoc')
+}
+
+artifacts {
+    archives(buildConnector)
+    archives(javadocJar)
 }
