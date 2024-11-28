@@ -2,9 +2,11 @@ package dbConnect.execution;
 
 import dbConnect.DBQuery;
 import dbConnect.models.autogen.AutomaticField;
+import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -58,17 +60,11 @@ public class InsertParser {
             // Ignore auto generated fields
             if (field.isAnnotationPresent(AutomaticField.class)) { continue; }
 
-            // Verify value for not null field
-            if (field.isAnnotationPresent(NotNullField.class)) {
-                Object fieldVal = field.get(model);
-                if (fieldVal == null) {
-                    throw new IllegalArgumentException("Missing value for field: " + field.getName() + "with not null annotation");
-                }
-            }
+            Object fieldValue = getFieldValue(model, field);
 
             columns.append(field.getName()).append(", ");
             placeholders.append("?, ");
-            val.add(field.get(model));
+            val.add(fieldValue);
         }
 
         // Trim command and space at the end
@@ -82,5 +78,37 @@ public class InsertParser {
 
         return dbQuery.setData(query, val.toArray());
     }
-    
+
+    /**
+     * Internal method to get the value of a field.
+     * @param model an instance of a Data Model.
+     * @param field an attribute extracted from a model.
+     * @return value of the field as an {@code object}.
+     * @param <T> Object.
+     * @throws IllegalAccessException when failed to extract field's details.
+     */
+    private static <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
+        Object fieldValue = field.get(model);
+        // Verify value for not null field
+        if (field.isAnnotationPresent(NotNullField.class)) {
+            if (fieldValue == null) {
+                throw new IllegalArgumentException("Missing value for field: " + field.getName() + " with not null annotation");
+            }
+        }
+
+        // Trim string that passes annotation's limit
+        if (field.isAnnotationPresent(MaxLength.class)) {
+            if (fieldValue instanceof String) {
+                int maxLength = field.getAnnotation(MaxLength.class).value();
+                String newTrim = ((String) fieldValue).length() > maxLength ?
+                        ((String) fieldValue).substring(0, maxLength) : (String) fieldValue;
+
+                fieldValue = newTrim;
+            } else {
+                throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
+            }
+        }
+        return fieldValue;
+    }
+
 }

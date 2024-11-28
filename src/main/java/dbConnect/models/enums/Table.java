@@ -4,14 +4,8 @@ package dbConnect.models.enums;
  * Enums responsible for parsing table's name.
  */
 public enum Table {
-    Supplier("supplier"),
     MerchCategory("merch_category"),
     Merch("merchandise"),
-    Customer("customer"),
-    ImportBill("import_bill"),
-    ImportItem("import_bill_items"),
-    RetailBill("retail_bill"),
-    RetailItem("retail_bill_items"),
     Generic("generic");
 
     private final String TableName;

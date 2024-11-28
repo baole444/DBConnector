@@ -2,6 +2,7 @@ package dbConnect.execution;
 
 import dbConnect.DBQuery;
 import dbConnect.models.autogen.PrimaryField;
+import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 
@@ -64,11 +65,7 @@ public class UpdateParser {
                 continue;
             }
 
-            Object fieldValue = field.get(model);
-
-            if (field.isAnnotationPresent(NotNullField.class) && fieldValue == null) {
-                throw new IllegalArgumentException("Missing value for field: " + field.getName() + "with not null annotation");
-            }
+            Object fieldValue = getFieldValue(model, field);
 
             if (fieldValue != null) {
                 setTerm.append(field.getName()).append(" = ?, ");
@@ -86,5 +83,34 @@ public class UpdateParser {
         val.add(primaryKeyValue);
 
         return  dbQuery.setData(query, val.toArray());
+    }
+
+    /**
+     * Internal method to get the value of a field.
+     * @param model an instance of a Data Model.
+     * @param field an attribute extracted from a model.
+     * @return value of the field as an {@code object}.
+     * @param <T> Object.
+     * @throws IllegalAccessException when failed to extract field's details.
+     */
+    private static <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
+        Object fieldValue = field.get(model);
+
+        if (field.isAnnotationPresent(NotNullField.class) && fieldValue == null) {
+            throw new IllegalArgumentException("Missing value for field: " + field.getName() + " with not null annotation");
+        }
+
+        if (field.isAnnotationPresent(MaxLength.class)) {
+            if (fieldValue instanceof String) {
+                int maxLength = field.getAnnotation(MaxLength.class).value();
+                String newTrim = ((String) fieldValue).length() > maxLength ?
+                        ((String) fieldValue).substring(0, maxLength) : (String) fieldValue;
+
+                fieldValue = newTrim;
+            } else {
+                throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
+            }
+        }
+        return fieldValue;
     }
 }

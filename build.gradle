@@ -14,7 +14,7 @@ sourceSets {
 }
 
 group 'Arsky.TCB'
-version '1.5'
+version '1.6'
 
 repositories {
     flatDir {

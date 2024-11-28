@@ -12,6 +12,7 @@ public class MerchCategory {
     @AutomaticField @PrimaryField
     private int merch_cat_id;
 
+    @MaxLength(100)
     private String merch_cat_name;
     private float merch_cat_taxrate;
 

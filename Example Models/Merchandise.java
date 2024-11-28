@@ -9,14 +9,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class Merchandise {
-    @AutomaticField @PrimaryField
+    @AutomaticField @PrimaryField @MaxLength(36)
     private String merch_id;
 
+    @NotNullField @MaxLength(100)
     private String merch_name;
     private float merch_import_cost;
     private float merch_retail_price;
     private float merch_taxrate;
+
+    @MaxLength(36)
     private int merch_cat_id;
+
+    @MaxLength(36)
     private String sup_id;
 
     public Merchandise() {}
