@@ -24,7 +24,7 @@ repositories {
 
 dependencies {
     implementation fileTree('Lib') { include '*.jar' }
-    implementation("org.mongodb:mongodb-drive-sync:5.3.1")
+    implementation("org.mongodb:mongodb-driver-sync:5.3.1")
     implementation("org.mongodb:bson:5.3.1")
 }
 ```

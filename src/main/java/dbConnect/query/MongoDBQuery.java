@@ -1,5 +1,6 @@
 package dbConnect.query;
 
+import com.mongodb.client.MongoDatabase;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
@@ -8,6 +9,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 public class MongoDBQuery implements DBInterface {
+    private MongoDatabase mongoDatabase;
+
     /**
      * A low level method to fetch data from a Mongo database server.
      *
@@ -33,6 +36,6 @@ public class MongoDBQuery implements DBInterface {
 
     @Override
     public int setDataSQL(String query, Object... params) throws SQLException {
-        return 0;
+        throw new UnsupportedOperationException("SQL operation not allowed in Mongo queries.");
     }
 }
