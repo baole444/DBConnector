@@ -4,6 +4,7 @@ import dbConnect.execution.DeleteParser;
 import dbConnect.execution.InsertParser;
 import dbConnect.execution.RetrieveParser;
 import dbConnect.execution.UpdateParser;
+import dbConnect.query.SqlDBQuery;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -31,9 +32,9 @@ import java.util.List;
 
 public class DBConnect {
     /**
-     * A static instance of {@link dbConnect.DBQuery}.
+     * A static instance of {@link SqlDBQuery}.
      */
-    private static DBQuery dbQuery;
+    private static SqlDBQuery SQLdBQuery;
 
     /**
      * Initialization of Database connection.<br>
@@ -49,7 +50,7 @@ public class DBConnect {
      */
     public static void initialize() {
         ConnectorString defaultConn = ConnectorString.defaultConn();
-        dbQuery = new DBQuery(defaultConn.getConnString(), defaultConn.getUser(), defaultConn.getPassword());
+        SQLdBQuery = new SqlDBQuery(defaultConn.getConnString(), defaultConn.getUser(), defaultConn.getPassword());
     }
 
     /**
@@ -71,7 +72,7 @@ public class DBConnect {
      */
     public static void initialize(String databaseName) {
         ConnectorString connectorString = ConnectorString.setDefaultLocalConnection(databaseName);
-        dbQuery = new DBQuery(connectorString.getConnString(), connectorString.getUser(), connectorString.getPassword());
+        SQLdBQuery = new SqlDBQuery(connectorString.getConnString(), connectorString.getUser(), connectorString.getPassword());
     }
 
     /**
@@ -93,7 +94,7 @@ public class DBConnect {
      */
     public static void initialize(String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setCustomLocalConnection(databaseName, portNumber, user, password);
-        dbQuery = new DBQuery(connectorString.getConnString(), connectorString.getUser(), connectorString.getPassword());
+        SQLdBQuery = new SqlDBQuery(connectorString.getConnString(), connectorString.getUser(), connectorString.getPassword());
     }
 
     /**
@@ -110,7 +111,7 @@ public class DBConnect {
      */
     public static void initialize(String host, String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setConnection(host, databaseName, portNumber, user, password);
-        dbQuery = new DBQuery(connectorString.getConnString(), user, password);
+        SQLdBQuery = new SqlDBQuery(connectorString.getConnString(), user, password);
     }
 
     /**
@@ -119,7 +120,7 @@ public class DBConnect {
      *
      */
     private static void initCheck() {
-        if (dbQuery == null) {
+        if (SQLdBQuery == null) {
             throw new IllegalStateException("DBConnect is not initialized.\nPlease initialize it first!");
         }
     }
@@ -128,7 +129,7 @@ public class DBConnect {
      * A method to get data from the database. It uses the input class to determine what table to pull from.
      * <div>
      * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
+     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
      * - Invoke {@link dbConnect.execution.RetrieveParser#retrieve(Class, String, Object...)}
      * </div>
      *
@@ -142,7 +143,7 @@ public class DBConnect {
      */
     public static <T> List<T> retrieve(Class<T> modelClass, String whereTerm, Object... params) {
         initCheck();
-        RetrieveParser retrieveParser = new RetrieveParser(dbQuery);
+        RetrieveParser retrieveParser = new RetrieveParser(SQLdBQuery);
 
         try {
             return retrieveParser.retrieve(modelClass, whereTerm, params);
@@ -158,7 +159,7 @@ public class DBConnect {
      * This method allows pulling all data of a model.
      * <div>
      * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
+     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link dbConnect.execution.RetrieveParser}.<br>
      * - Invoke {@link dbConnect.execution.RetrieveParser#retrieveAll(Class)}
      * </div>
      *
@@ -176,7 +177,7 @@ public class DBConnect {
      * A method to insert data to the database. It uses the input class to determine what table to push to.
      * <div>
      * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.InsertParser}.<br>
+     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link dbConnect.execution.InsertParser}.<br>
      * - Invoke {@link dbConnect.execution.InsertParser#insert(Object)}
      * </div>
      *
@@ -189,7 +190,7 @@ public class DBConnect {
      */
     public static <T> boolean insert(T model) {
         initCheck();
-        InsertParser insertParser = new InsertParser(dbQuery);
+        InsertParser insertParser = new InsertParser(SQLdBQuery);
 
         try {
             int successRow = insertParser.insert(model);
@@ -205,7 +206,7 @@ public class DBConnect {
      * A method to update data to the database. It uses the input class to determine what row in a table to update.
      * <div>
      * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.UpdateParser}.<br>
+     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link dbConnect.execution.UpdateParser}.<br>
      * - Invoke {@link dbConnect.execution.UpdateParser#update(Object)}
      * </div>
      *
@@ -219,7 +220,7 @@ public class DBConnect {
     public static <T> boolean update(T model) {
         initCheck();
 
-        UpdateParser updateParser = new UpdateParser(dbQuery);
+        UpdateParser updateParser = new UpdateParser(SQLdBQuery);
 
         try {
             int successUpdate = updateParser.update(model);
@@ -235,7 +236,7 @@ public class DBConnect {
      * A method to delete data to the database. It uses the input class to determine what row in a table to delete.
      * <div>
      * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #dbQuery} is null or not, then create instance of {@link dbConnect.execution.DeleteParser}.<br>
+     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link dbConnect.execution.DeleteParser}.<br>
      * - Invoke {@link dbConnect.execution.DeleteParser#delete(Object)}
      * </div>
      *
@@ -248,7 +249,7 @@ public class DBConnect {
      */
     public static <T> boolean delete(T model) {
         initCheck();
-        DeleteParser deleteParser = new DeleteParser(dbQuery);
+        DeleteParser deleteParser = new DeleteParser(SQLdBQuery);
 
         try {
             int successRow = deleteParser.delete(model);

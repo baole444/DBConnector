@@ -1,11 +1,11 @@
 package dbConnect;
 
 public class ConnectorString {
-    private String host;
-    private int port;
-    private String databaseName;
-    private String user;
-    private String password;
+    private final String host;
+    private final int port;
+    private final String databaseName;
+    private final String user;
+    private final String password;
 
     public ConnectorString(String host, int port, String databaseName, String user, String password) {
         this.host = host;

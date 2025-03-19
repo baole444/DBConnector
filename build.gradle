@@ -14,7 +14,7 @@ sourceSets {
 }
 
 group 'Arsky.TCB'
-version '1.6'
+version '1.7'
 
 repositories {
     flatDir {
@@ -30,12 +30,14 @@ ext {
 sourceCompatibility = '21'
 targetCompatibility = '21'
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
 dependencies {
     implementation fileTree('Lib') { include '*.jar' }
+    implementation("org.mongodb:mongodb-drive-sync:5.3.1")
+    implementation("org.mongodb:bson:5.3.1")
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 }
@@ -44,7 +46,7 @@ test {
     useJUnitPlatform()
 }
 
-task buildConnector(type: Jar) {
+tasks.register('buildConnector', Jar) {
     group = 'build'
     description = 'Database Connector and SQL statement parser.'
     from sourceSets.dbConnect.output
@@ -53,7 +55,7 @@ task buildConnector(type: Jar) {
     destinationDirectory = file("${buildDir}/libs")
 }
 
-task buildJavadoc(type: Javadoc) {
+tasks.register('buildJavadoc', Javadoc) {
     group = 'documentation'
     description = 'Generate JavaDoc.'
     source = sourceSets.dbConnect.allJava
@@ -61,7 +63,7 @@ task buildJavadoc(type: Javadoc) {
     destinationDir = file("${buildDir}/docs/javadoc")
 }
 
-task javadocJar(type: Jar) {
+tasks.register('javadocJar', Jar) {
     group = 'documentation'
     description = 'Turn html generated documents to jar file.'
     dependsOn buildJavadoc

@@ -1,6 +1,6 @@
 package dbConnect.execution;
 
-import dbConnect.DBQuery;
+import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.enums.Table;
 
@@ -11,18 +11,18 @@ import java.sql.SQLException;
  * Handle delete query parsing using reflection.
  */
 public class DeleteParser {
-    private final DBQuery dbQuery;
+    private final SqlDBQuery SQLdBQuery;
 
     /**
      * Constructor of {@link DeleteParser}.
-     * @param dbQuery an instance of {@link DBQuery#DBQuery(String, String, String)}
+     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public DeleteParser(DBQuery dbQuery) {
-        this.dbQuery = dbQuery;
+    public DeleteParser(SqlDBQuery SQLdBQuery) {
+        this.SQLdBQuery = SQLdBQuery;
     }
 
     /**
-     * A method invokes {@link DBQuery#setData(String, Object...)}
+     * A method invokes {@link SqlDBQuery#setDataSQL(String, Object...)}
      * to delete data based on {@code Object} model's primary key attribute.
      * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.<br>
      *             It must have an attribute marked with {@link PrimaryField} annotation.
@@ -66,6 +66,6 @@ public class DeleteParser {
 
         String query = "delete from " + table.getName() + " where " + primaryField.getName() + " = ?";
 
-        return dbQuery.setData(query, primaryKeyValue);
+        return SQLdBQuery.setDataSQL(query, primaryKeyValue);
     }
 }

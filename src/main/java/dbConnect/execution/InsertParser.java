@@ -1,12 +1,11 @@
 package dbConnect.execution;
 
-import dbConnect.DBQuery;
+import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,18 +15,18 @@ import java.util.List;
  * Handle insert query parsing using reflection.
  */
 public class InsertParser {
-    private final DBQuery dbQuery;
+    private final SqlDBQuery SQLdBQuery;
 
     /**
      * Constructor of {@link InsertParser}.
-     * @param dbQuery an instance of {@link DBQuery#DBQuery(String, String, String)}
+     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public InsertParser(DBQuery dbQuery) {
-        this.dbQuery = dbQuery;
+    public InsertParser(SqlDBQuery SQLdBQuery) {
+        this.SQLdBQuery = SQLdBQuery;
     }
 
     /**
-     * A method invokes {@link DBQuery#setData(String, Object...)}
+     * A method invokes {@link SqlDBQuery#setDataSQL(String, Object...)}
      * to insert data from an {@code Object} model.
      * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.
      * @return the count of inserted rows.
@@ -76,7 +75,7 @@ public class InsertParser {
 
         String query = "insert into " + table.getName() + " (" + columns + ") values (" + placeholders + ")";
 
-        return dbQuery.setData(query, val.toArray());
+        return SQLdBQuery.setDataSQL(query, val.toArray());
     }
 
     /**

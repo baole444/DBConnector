@@ -1,6 +1,6 @@
 package dbConnect.execution;
 
-import dbConnect.DBQuery;
+import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.enums.Table;
@@ -15,18 +15,18 @@ import java.util.List;
  * Handle update query parsing using reflection.
  */
 public class UpdateParser {
-    private final DBQuery dbQuery;
+    private final SqlDBQuery SQLdBQuery;
 
     /**
      * Constructor of {@link UpdateParser}.
-     * @param dbQuery an instance of {@link DBQuery#DBQuery(String, String, String)}
+     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public UpdateParser(DBQuery dbQuery) {
-        this.dbQuery = dbQuery;
+    public UpdateParser(SqlDBQuery SQLdBQuery) {
+        this.SQLdBQuery = SQLdBQuery;
     }
 
     /**
-     * A method invokes {@link DBQuery#setData(String, Object...)}
+     * A method invokes {@link SqlDBQuery#setDataSQL(String, Object...)}
      * to update data from an {@code Object} model base on it's {@link PrimaryField} to the database server.
      * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.<br>
      *              It must have an attribute marked with {@link PrimaryField} annotation.
@@ -82,7 +82,7 @@ public class UpdateParser {
 
         val.add(primaryKeyValue);
 
-        return  dbQuery.setData(query, val.toArray());
+        return  SQLdBQuery.setDataSQL(query, val.toArray());
     }
 
     /**

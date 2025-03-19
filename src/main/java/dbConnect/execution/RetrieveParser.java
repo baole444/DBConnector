@@ -1,7 +1,8 @@
 package dbConnect.execution;
 
-import dbConnect.DBMapper;
-import dbConnect.DBQuery;
+import dbConnect.mapper.ResultSetInterface;
+import dbConnect.mapper.SQLMapper;
+import dbConnect.query.SqlDBQuery;
 import dbConnect.models.enums.Table;
 
 import java.sql.SQLException;
@@ -12,18 +13,18 @@ import java.util.List;
  * This class also contains overload for getting all data.
  */
 public class RetrieveParser {
-    private final DBQuery dbQuery;
+    private final SqlDBQuery SQLdBQuery;
 
     /**
      * Constructor of {@link RetrieveParser}.
-     * @param dbQuery an instance of {@link DBQuery#DBQuery(String, String, String)}
+     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public RetrieveParser(DBQuery dbQuery) {
-        this.dbQuery = dbQuery;
+    public RetrieveParser(SqlDBQuery SQLdBQuery) {
+        this.SQLdBQuery = SQLdBQuery;
     }
 
     /**
-     * A method invokes {@link DBQuery#loadData(String, DBMapper, Object...)}
+     * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMapper, Object...)}
      * to fetch data from a {@code Class} model .
      * @param modelClass a Data Model Class.
      *                   It must contain a method call {@code getTable()}.
@@ -45,10 +46,10 @@ public class RetrieveParser {
             throw new IllegalAccessException("Model is missing a valid getTable() method that return a Table enum.");
         }
 
-        DBMapper<T> mapper;
+        ResultSetInterface<T> mapper;
 
         try {
-            mapper = (DBMapper<T>) modelClass.getMethod("getMap").invoke(null);
+            mapper = (ResultSetInterface<T>) modelClass.getMethod("getMap").invoke(null);
         } catch (Exception e) {
             throw new IllegalAccessException("Model is missing a valid getMap() method that return a new instant of mapping method.");
         }
@@ -58,13 +59,15 @@ public class RetrieveParser {
             query += " where " + whereTerm;
         }
 
-        return dbQuery.loadData(query, mapper, params);
+        SQLMapper<T> sqlMapper = new SQLMapper<>(mapper);
+
+        return SQLdBQuery.loadSQLData(query, sqlMapper, params);
     }
 
     /**
-     * A method invokes {@link DBQuery#loadData(String, DBMapper, Object...)}
+     * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMapper, Object...)}
      * to fetch all data from a {@code Class} model.
-     * This simply involk {@link #retrieve(Class, String, Object...)} with no {@code whereTerm} condition.
+     * This simply invoke {@link #retrieve(Class, String, Object...)} with no {@code whereTerm} condition.
      * @param modelClass a Data Model Class.
      *                   It must contain a method call {@code getTable()}.
      *                   It must contain a method call {@code getMap()}.

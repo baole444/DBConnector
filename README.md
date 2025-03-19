@@ -1,9 +1,15 @@
-# MySQL Database Connector
-An abstraction for JDBC data query tasks.
+> [!WARNING]
+> Project under heavy refactoring with NoSQL MongoDB support.
+> Implementation might introduce breaking change.
+> Since version 1.7
+
+# General Database Connector
+An abstraction for JDBC and MongoDB data query tasks.
 
 ## Feature:
-Parsing query statements base on data model.
-Insert, Update, Delete, Retrieve data with ease.
+- Parsing query statements base on data model.
+- Insert, Update, Delete, Retrieve data with ease.
+- (WIP) MongoDB support.
 
 ## Installation:
 This project uses Gradle (8.7) for easy import of dependencies and build tasks, make sure to add this to your `build.gradle`:
@@ -18,8 +24,12 @@ repositories {
 
 dependencies {
     implementation fileTree('Lib') { include '*.jar' }
+    implementation("org.mongodb:mongodb-drive-sync:5.3.1")
+    implementation("org.mongodb:bson:5.3.1")
 }
 ```
+For additional setup, please see the project's [build.gradle](https://github.com/baole444/DBConnector/blob/main/build.gradle) file
+
 > [!IMPORTANT]   
 > Enums used by the system (such as table name) is statically complied at runtime and cannot be added. 
 > If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.
@@ -95,9 +105,9 @@ public enum Table {
 Your data model should have some basic method to initialize it like constructor for the class, getters, and setters for attributes. However, there are three important required methods that you have to add:
 
 ##### Result Mapping:
-Result mapping allows streamline call when retrieving data. This method implements `DBMapper` interface to parse the result from a query into your model class instance and return it.
+Result mapping allows streamline call when retrieving data. This method implements `ResultSetInterface` interface to parse the result from a query into your model class instance and return it.
 ```java
-    public static class MerchCatMap implements DBMapper<MerchCategory> {
+    public static class MerchCatMap implements ResultSetInterface<MerchCategory> {
         @Override
         public MerchCategory map(ResultSet resultSet) throws SQLException {
             // binding result set to local variables from their respective column name.
@@ -109,7 +119,7 @@ Result mapping allows streamline call when retrieving data. This method implemen
             return new MerchCategory(id, name, tax);
         }
     }
-    public static DBMapper<MerchCategory> getMap() {
+    public static ResultSetInterface<MerchCategory> getMap() {
         // return the result mapping method.
         return new MerchCatMap();
     }    
@@ -125,7 +135,7 @@ Table enums allow binding the model class with a valid table name. All parsers r
 
 #### Final result:
 ```java
-import dbConnect.DBMapper;
+import dbConnect.mapper.ResultSetInterface;
 import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.enums.Table;
@@ -196,7 +206,7 @@ public class MerchCategory {
         this.merch_cat_taxrate = merch_cat_taxrate;
     }
 
-    public static class MerchCatMap implements DBMapper<MerchCategory> {
+    public static class MerchCatMap implements ResultSetInterface<MerchCategory> {
         @Override
         public MerchCategory map(ResultSet resultSet) throws SQLException {
             int id = resultSet.getInt("merch_cat_id");
@@ -210,7 +220,7 @@ public class MerchCategory {
         return Table.MerchCategory;
     }
 
-    public static DBMapper<MerchCategory> getMap() {
+    public static ResultSetInterface<MerchCategory> getMap() {
         return new MerchCatMap();
     }
 }
@@ -236,7 +246,7 @@ However, if you also want the call to be shorter, you can modify the default str
         return new ConnectorString("localhost", 3306, "store_db", "root", "root");
     }
 ```
-After this, you can simply call `DBConnect.initialize()`. Then you are good to go!
+After this, you can simply call `DBConnect.initialize()`. Then you’re good to go!
 
 ### DBConnect example usage:
 Assumed you initialized the DBConnect and created a Data Model called Merchandise.
