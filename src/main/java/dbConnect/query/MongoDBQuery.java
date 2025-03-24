@@ -1,26 +1,43 @@
 package dbConnect.query;
 
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MongoDBQuery implements DBInterface {
     private MongoDatabase mongoDatabase;
 
+    public MongoDBQuery(String connectionString, String dbName) {
+        MongoClient mongoClient = MongoClients.create(connectionString);
+        this.mongoDatabase = mongoClient.getDatabase(dbName);
+    }
+
     /**
      * A low level method to fetch data from a Mongo database server.
-     *
      * @param collectionName the collection to query.
-     * @param model          a Mapping method of a Data Model Class. It can be obtained via {@code getMap()}.
+     * @param filter data filtering conditions.
+     * @param projection limit on which field to return.
+     * @param model a Mapping method of a Data Model Class. It can be obtained via {@code getMap()}.
      * @return {@link List} of instances of a specified data model.
+     * @param <T> Type of the data model
      */
     @Override
-    public <T> List<T> loadMongoData(String collectionName, MongoMapper<T> model) {
-        return List.of();
+    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model) {
+        List<T> rows = new ArrayList<>();
+
+        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+
+        for (Document doc : collection.find(filter).projection(projection)) {
+            rows.add(model.map(doc));
+        }
+
+        return rows;
     }
 
 

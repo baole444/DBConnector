@@ -103,7 +103,7 @@ public class SqlDBQuery implements DBInterface {
     }
 
     @Override
-    public <T> List<T> loadMongoData(String collectionName, MongoMapper<T> model) {
+    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model) {
         throw new UnsupportedOperationException("MongoDB operation not allowed in SQL queries.");
     }
 

@@ -5,6 +5,7 @@ import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.ResultSetInterface;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,7 +30,7 @@ public interface DBInterface {
      * @return {@link List} of instances of a specified data model.
      * @param <T> Object
      */
-    <T> List<T> loadMongoData(String collectionName, MongoMapper<T> model);
+    <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model);
 
     /**
      * A low level method to update data with an SQL database server.

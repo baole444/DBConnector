@@ -1,5 +1,6 @@
 package dbConnect.mapper;
 
+import com.mongodb.MongoException;
 import org.bson.Document;
 
 /**
@@ -7,5 +8,5 @@ import org.bson.Document;
  * @param <T> a {@code DataModel} Object that required parsing.
  */
 public interface DocumentInterface<T> {
-    T map(Document document);
+    T map(Document document) throws MongoException;
 }

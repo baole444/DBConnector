@@ -2,6 +2,7 @@ module dbConnect {
     requires java.sql;
     requires org.mongodb.bson;
     requires org.mongodb.driver.sync.client;
+    requires org.mongodb.driver.core;
     exports dbConnect;
     exports dbConnect.models.autogen;
     exports dbConnect.models.enums;

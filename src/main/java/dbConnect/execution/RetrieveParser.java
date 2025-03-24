@@ -1,9 +1,14 @@
 package dbConnect.execution;
 
+import dbConnect.mapper.DocumentInterface;
+import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.ResultSetInterface;
 import dbConnect.mapper.SQLMapper;
+import dbConnect.models.enums.Collection;
+import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.enums.Table;
+import org.bson.Document;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -13,14 +18,38 @@ import java.util.List;
  * This class also contains overload for getting all data.
  */
 public class RetrieveParser {
-    private final SqlDBQuery SQLdBQuery;
+    private final SqlDBQuery sqlDBQuery;
+    private final MongoDBQuery mongoDBQuery;
+
 
     /**
      * Constructor of {@link RetrieveParser}.
-     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
+     * For noSQL query, see {@link #RetrieveParser(MongoDBQuery)}
+     * @param sqlDBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public RetrieveParser(SqlDBQuery SQLdBQuery) {
-        this.SQLdBQuery = SQLdBQuery;
+    public RetrieveParser(SqlDBQuery sqlDBQuery) {
+        this.sqlDBQuery = sqlDBQuery;
+        this.mongoDBQuery = null;
+    }
+
+    /**
+     * Constructor of {@link RetrieveParser}.
+     * For SQL query, see {@link #RetrieveParser(SqlDBQuery)}
+     * @param mongoDBQuery an instance of {@link MongoDBQuery#MongoDBQuery(String, String)}
+     */
+    public RetrieveParser(MongoDBQuery mongoDBQuery) {
+        this.mongoDBQuery = mongoDBQuery;
+        this.sqlDBQuery = null;
+    }
+
+    public <T> List<T> retrieve(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
+        if (mongoDBQuery == null) {
+            return retrieveSQL(modelClass, whereTerm, params);
+        } else if (sqlDBQuery == null) {
+            return retrieveMongo(modelClass, whereTerm, params);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -37,7 +66,7 @@ public class RetrieveParser {
      * @throws IllegalAccessException when missing {@code getTable()} or {@code getMap()} method from the data model.
      * @throws SQLException when there is an error occurred during data selection.
      */
-    public <T> List<T> retrieve(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
+    private <T> List<T> retrieveSQL(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
         Table table;
 
         try {
@@ -49,9 +78,9 @@ public class RetrieveParser {
         ResultSetInterface<T> mapper;
 
         try {
-            mapper = (ResultSetInterface<T>) modelClass.getMethod("getMap").invoke(null);
+            mapper = (ResultSetInterface<T>) modelClass.getMethod("getTableMap").invoke(null);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getMap() method that return a new instant of mapping method.");
+            throw new IllegalAccessException("Model is missing a valid getTableMap() method that return a new instant of mapping method.");
         }
 
         String query = "select * from " + table.getName();
@@ -61,7 +90,33 @@ public class RetrieveParser {
 
         SQLMapper<T> sqlMapper = new SQLMapper<>(mapper);
 
-        return SQLdBQuery.loadSQLData(query, sqlMapper, params);
+        return sqlDBQuery.loadSQLData(query, sqlMapper, params);
+    }
+
+    private <T> List<T> retrieveMongo(Class<T> modelClass, String jsonFilter, Object... params) throws IllegalAccessException {
+        Collection collection;
+
+        try {
+            collection = (Collection) modelClass.getMethod("getCollection").invoke(null);
+        } catch (Exception e) {
+            throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
+        }
+
+        DocumentInterface<T> mapper;
+
+        try {
+            mapper = (DocumentInterface<T>) modelClass.getMethod("getCollectionMap").invoke(null);
+        } catch (Exception e) {
+            throw new IllegalAccessException("Model is missing a valid getCollectionMap() method that return a new instant of mapping method.");
+        }
+
+        Document filter = Document.parse(jsonFilter);
+
+        Document projection = new Document();
+
+        MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
+
+        return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
     }
 
     /**

@@ -1,18 +1,20 @@
 package dbConnect.models;
 
-import dbConnect.mapper.DataMapper;
-import dbConnect.mapper.ResultSetInterface;
-import dbConnect.mapper.SQLMapper;
+import com.mongodb.MongoException;
+import dbConnect.DataModel;
+import dbConnect.mapper.*;
 import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
+import dbConnect.models.enums.Collection;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
+import org.bson.Document;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class Merchandise {
+public class Merchandise extends DataModel<Merchandise> {
     @AutomaticField @PrimaryField @MaxLength(36)
     private String merch_id;
 
@@ -119,7 +121,7 @@ public class Merchandise {
         return this.merch_name;
     }
 
-    public static class MerchandiseMap implements ResultSetInterface<Merchandise> {
+    public static class MerchandiseSQLMap implements ResultSetInterface<Merchandise> {
         @Override
         public Merchandise map(ResultSet resultSet) throws SQLException {
             String id = resultSet.getString("merch_id");
@@ -133,11 +135,37 @@ public class Merchandise {
         }
     }
 
-    public static Table getTable() {
+    public static class MerchandiseMongoMap implements DocumentInterface<Merchandise> {
+        @Override
+        public Merchandise map(Document document) throws MongoException {
+            String id = document.getString("merch_id");
+            String name = document.getString("merch_name");
+            float importCost = document.getDouble("merch_import_cost").floatValue();
+            float retailPrice = document.getDouble("merch_retail_price").floatValue();
+            float tax = document.getDouble("merch_taxrate").floatValue();
+            int merchId = document.getInteger("merch_cat_id");
+            String supplierId = document.getString("sup_id");
+            return new Merchandise(id, name, importCost, retailPrice, tax, merchId, supplierId);
+        }
+    }
+
+    @Override
+    public Table getTable() {
         return Table.Merch;
     }
 
-    public static ResultSetInterface<Merchandise> getMap() {
-        return new MerchandiseMap();
+    @Override
+    public Collection getCollection() {
+        return Collection.Merch;
+    }
+
+    @Override
+    public ResultSetInterface<Merchandise> getTableMap() {
+        return new MerchandiseSQLMap();
+    }
+
+    @Override
+    public DocumentInterface<Merchandise> getCollectionMap() {
+        return new MerchandiseMongoMap();
     }
 }

@@ -38,7 +38,7 @@ public class DBConnect {
 
     /**
      * Initialization of Database connection.<br>
-     * This overload fetch default value from ConnectorString.
+     * This overload fetches the default value from ConnectorString.
      * <ul>
      *      <li>host: {@code localhost}</li>
      *      <li>database: {@code store_db}</li>
