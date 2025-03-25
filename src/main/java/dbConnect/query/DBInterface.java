@@ -40,5 +40,5 @@ public interface DBInterface {
      */
     int setDataSQL(String query, Object... params) throws SQLException;
 
-    void insertMongoData(String collectionName, Document document);
+    void setMongoData();
 }

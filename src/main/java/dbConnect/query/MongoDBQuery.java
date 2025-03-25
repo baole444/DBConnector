@@ -1,17 +1,17 @@
 package dbConnect.query;
 
 import com.mongodb.client.*;
+import com.mongodb.client.result.DeleteResult;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MongoDBQuery implements DBInterface {
-    private MongoDatabase mongoDatabase;
+    private final MongoDatabase mongoDatabase;
 
     public MongoDBQuery(String connectionString, String dbName) {
         MongoClient mongoClient = MongoClients.create(connectionString);
@@ -40,10 +40,29 @@ public class MongoDBQuery implements DBInterface {
         return rows;
     }
 
-
     @Override
-    public void insertMongoData(String collectionName, Document document) {
+    public void setMongoData() {
+        throw new UnsupportedOperationException("MongoDB does not support parsing string as query, please use specific method for CRUD instead.");
+    }
 
+    public int insertMongoData(String collectionName, Document document) {
+        try {
+            MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+            collection.insertOne(document);
+            return 1;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to insert data into collection: " + e.getMessage());
+        }
+    }
+
+    public int deleteMongoData(String collectionName, Document filter) {
+        try {
+            MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+            DeleteResult result = collection.deleteMany(filter);
+            return (int) result.getDeletedCount();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to insert data into collection: " + e.getMessage());
+        }
     }
 
     @Override

@@ -98,7 +98,7 @@ public class SqlDBQuery implements DBInterface {
     }
 
     @Override
-    public void insertMongoData(String collectionName, Document document) {
+    public void setMongoData() {
         throw new UnsupportedOperationException("MongoDB operation not allowed in SQL queries.");
     }
 

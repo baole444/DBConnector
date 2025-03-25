@@ -1,5 +1,6 @@
 package dbConnect.execution;
 
+import dbConnect.DataModel;
 import dbConnect.mapper.DocumentInterface;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.ResultSetInterface;
@@ -12,6 +13,8 @@ import org.bson.Document;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Handle retrieval query (select query) parsing using reflection.
@@ -42,11 +45,19 @@ public class RetrieveParser {
         this.sqlDBQuery = null;
     }
 
-    public <T> List<T> retrieve(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
+    /**
+     * A method to determine the correct inner retrieve method.
+     * @param modelClass a data model class extending {@link DataModel}.
+     * @param condition a set of conditions used for the query.
+     * @param params parameters of the conditions in order and optional projection field (NoSQL only).
+     * @return a List of instances specified by the data model class that met the {@code condition} conditions.
+     * @param <T> a data model class extending {@link dbConnect.DataModel}
+     */
+    public <T> List<T> retrieve(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException, SQLException {
         if (mongoDBQuery == null) {
-            return retrieveSQL(modelClass, whereTerm, params);
+            return retrieveSQL(modelClass, condition, params);
         } else if (sqlDBQuery == null) {
-            return retrieveMongo(modelClass, whereTerm, params);
+            return retrieveMongo(modelClass, condition, params);
         } else {
             return null;
         }
@@ -54,19 +65,26 @@ public class RetrieveParser {
 
     /**
      * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMapper, Object...)}
-     * to fetch data from a {@code Class} model .
+     * to fetch data for a {@link dbConnect.DataModel} model.
+     * <p>
      * @param modelClass a Data Model Class.
-     *                   It must contain a method call {@code getTable()}.
-     *                   It must contain a method call {@code getMap()}.
+     *                   It must contain a method call {@link DataModel#getTable()}.
+     *                   It must contain a method call {@link DataModel#getTableMap()}.
+     * </p>
+     * <p>
      * @param whereTerm conditions used for the search.
      *                  Values are stored in {@code params} and is parsed where placeholder marking {@code ?} is placed.
+     * </p>
      * @param params values of {@code whereTerm} store in corresponding order.
      * @return a List of instances specified by the data model class that met the {@code whereTerm} conditions.
-     * @param <T> Class
-     * @throws IllegalAccessException when missing {@code getTable()} or {@code getMap()} method from the data model.
+     * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @throws IllegalAccessException when missing {@link DataModel#getTable()} or {@link DataModel#getTableMap()} method from the data model
+     * or accessing the method outside SQL scope.
      * @throws SQLException when there is an error occurred during data selection.
      */
     private <T> List<T> retrieveSQL(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
+        if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
+
         Table table;
 
         try {
@@ -93,6 +111,21 @@ public class RetrieveParser {
         return sqlDBQuery.loadSQLData(query, sqlMapper, params);
     }
 
+    /**
+     * A method invoke {@link MongoDBQuery#loadMongoData(String, Document, Document, MongoMapper)}
+     * to fetch data for a {@link dbConnect.DataModel} model.
+     * @param modelClass a Data Model Class.
+     *                   It must contain a method call {@link DataModel#getCollection()}.
+     *                   It must contain a method call {@link DataModel#getCollectionMap()}.
+     * </p>
+     * @param jsonFilter conditions used for the search.
+     *                   Values are stored in {@code params} and is parsed where placeholder marking {@code ?} is placed.
+     * @param params values of {@code jsonFilter} store in corresponding order, the last params can be used for projection.
+     * @return a List of instances specified by the data model class that met the {@code jsonFilter} conditions.
+     * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @throws IllegalAccessException when missing {@link DataModel#getCollection()} or {@link DataModel#getCollectionMap()} method from the data model
+     * or accessing the method outside NoSQL scope.
+     */
     private <T> List<T> retrieveMongo(Class<T> modelClass, String jsonFilter, Object... params) throws IllegalAccessException {
         Collection collection;
 
@@ -110,29 +143,60 @@ public class RetrieveParser {
             throw new IllegalAccessException("Model is missing a valid getCollectionMap() method that return a new instant of mapping method.");
         }
 
-        Document filter = Document.parse(jsonFilter);
-
         Document projection = new Document();
+
+        int filterArgCount = countFilterParams(jsonFilter);
+
+        if (params.length < filterArgCount) {
+            throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
+        }
+
+        if (params.length > filterArgCount && params[params.length -1] instanceof String) {
+            projection = Document.parse((String) params[params.length - 1]);
+
+            Object[] filterParams = new Object[filterArgCount];
+            System.arraycopy(params, 0, filterParams, 0, filterArgCount);
+
+            params = filterParams;
+        }
+
+        Document filter = Document.parse(appendPlaceholderValue(jsonFilter, params, filterArgCount));
 
         MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
 
         return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
     }
 
+    private int countFilterParams(String filter) {
+        Matcher matcher = Pattern.compile("\\?").matcher(filter);
+        int count = 0;
+
+        while (matcher.find()){
+            count++;
+        }
+
+        return count;
+    }
+
+    private String appendPlaceholderValue(String filter, Object[] params, int argCount) {
+        for (int i = 0; i < argCount; i++) {
+            String appending = params[i] instanceof String ? "\""
+                    + params[i] + "\"" : params[i].toString();
+
+            filter = filter.replaceFirst("\\?", appending);
+        }
+
+        return filter;
+    }
+
     /**
-     * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMapper, Object...)}
-     * to fetch all data from a {@code Class} model.
-     * This simply invoke {@link #retrieve(Class, String, Object...)} with no {@code whereTerm} condition.
-     * @param modelClass a Data Model Class.
-     *                   It must contain a method call {@code getTable()}.
-     *                   It must contain a method call {@code getMap()}.
+     * A method to retrieve all entries of a Data model
+     * This simply invoke {@link #retrieve(Class, String, Object...)} with no {@code condition}.
+     * @param modelClass a data model class extending {@link DataModel}.
      * @return a List of all instances specified by the data model class.
-     * @param <T> Class
-     * @throws IllegalAccessException when missing {@code getTable()} or {@code getMap()} method from the data model.
-     * @throws SQLException when there is an error occurred during data selection.
+     * @param <T> a data model class extending {@link dbConnect.DataModel}
      */
     public <T> List<T> retrieveAll(Class<T> modelClass) throws IllegalAccessException, SQLException {
         return retrieve(modelClass, null);
-
     }
 }
