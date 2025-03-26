@@ -262,7 +262,7 @@ public class DBConnect {
      * <div>
      * Function:<br>
      * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link UpdateParser}.<br>
-     * - Invoke {@link UpdateParser#update(Object)}
+     * - Invoke {@link UpdateParser#update(Object, String, Object...)}
      * </div>
      *
      * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
@@ -273,11 +273,40 @@ public class DBConnect {
      */
     public static <T> boolean update(T model) {
         initCheck();
+        UpdateParser updateParser = null;
 
-        UpdateParser updateParser = new UpdateParser(SQLdBQuery);
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            updateParser = new UpdateParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            updateParser = new UpdateParser(MongoDBQuery);
+        }
 
         try {
-            int successUpdate = updateParser.update(model);
+            assert updateParser != null;
+            int successUpdate = updateParser.update(model, null);
+            return  successUpdate > 0;
+        } catch (SQLException | IllegalAccessException e) {
+            System.out.println("Failure during update: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static <T> boolean update(T model, String conditions, Object... params) {
+        initCheck();
+        UpdateParser updateParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            updateParser = new UpdateParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            updateParser = new UpdateParser(MongoDBQuery);
+        }
+
+        try {
+            assert updateParser != null;
+            int successUpdate = updateParser.update(model, conditions, params);
             return  successUpdate > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during update: " + e.getMessage());
@@ -313,7 +342,7 @@ public class DBConnect {
 
         try {
             assert deleteParser != null;
-            int successRow = deleteParser.delete(model, null, null);
+            int successRow = deleteParser.delete(model, null);
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during deletion: " + e.getMessage());

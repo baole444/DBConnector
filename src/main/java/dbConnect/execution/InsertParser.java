@@ -93,7 +93,7 @@ public class InsertParser {
         }
 
         // Trim command and space at the end
-        if (columns.length() > 0) {
+        if (!columns.isEmpty()) {
             columns.setLength(columns.length() - 2);
             placeholders.setLength(placeholders.length() -2);
         }
@@ -101,6 +101,7 @@ public class InsertParser {
 
         String query = "insert into " + table.getName() + " (" + columns + ") values (" + placeholders + ")";
 
+        assert SQLdBQuery != null;
         return SQLdBQuery.setDataSQL(query, val.toArray());
     }
 
@@ -127,7 +128,8 @@ public class InsertParser {
             document.append(field.getName(),fieldValue);
         }
 
-        return MongoDBQuery.insertMongoData(collection.getName(), document);
+        assert MongoDBQuery != null;
+        return MongoDBQuery.setMongoData(collection.getName()).insert(document).count();
     }
 
     /**
@@ -151,10 +153,11 @@ public class InsertParser {
         if (field.isAnnotationPresent(MaxLength.class)) {
             if (fieldValue instanceof String) {
                 int maxLength = field.getAnnotation(MaxLength.class).value();
-                String newTrim = ((String) fieldValue).length() > maxLength ?
-                        ((String) fieldValue).substring(0, maxLength) : (String) fieldValue;
 
-                fieldValue = newTrim;
+                if (((String) fieldValue).length() > maxLength) {
+                    fieldValue = ((String) fieldValue).substring(0, maxLength);
+                }
+                
             } else {
                 throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
             }

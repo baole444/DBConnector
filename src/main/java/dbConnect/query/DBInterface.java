@@ -1,13 +1,8 @@
 package dbConnect.query;
 
-import dbConnect.mapper.DataMapper;
 import dbConnect.mapper.MongoMapper;
-import dbConnect.mapper.ResultSetInterface;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -40,5 +35,5 @@ public interface DBInterface {
      */
     int setDataSQL(String query, Object... params) throws SQLException;
 
-    void setMongoData();
+    MongoDBQuery setMongoData(String collectionName);
 }

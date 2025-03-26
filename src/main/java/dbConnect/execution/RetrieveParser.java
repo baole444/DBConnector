@@ -164,6 +164,7 @@ public class RetrieveParser {
 
         MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
 
+        assert mongoDBQuery != null;
         return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
     }
 

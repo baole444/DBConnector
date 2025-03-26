@@ -2,6 +2,8 @@ package dbConnect.query;
 
 import com.mongodb.client.*;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.SQLMapper;
 import org.bson.Document;
@@ -12,6 +14,10 @@ import java.util.List;
 
 public class MongoDBQuery implements DBInterface {
     private final MongoDatabase mongoDatabase;
+    private MongoCollection<Document> collection;
+    private int rowCount = 0;
+    private boolean initState = false;
+
 
     public MongoDBQuery(String connectionString, String dbName) {
         MongoClient mongoClient = MongoClients.create(connectionString);
@@ -40,28 +46,83 @@ public class MongoDBQuery implements DBInterface {
         return rows;
     }
 
+    /**
+     * <div>
+     *     Method uses to initiate MongoDB CRUD operation.
+     * </div>
+     * <div>
+     *     Supported chain method:
+     *     <ul>
+     *     <li>{@link #insert(Document)}</li>
+     *     <li>{@link #delete(Document)}</li>
+     *     <li>{@link #update(Document, Document)}</li>
+     *     </ul>
+     * </div>
+     * <div>
+     *     To return number of affected entries, call {@link #count()} at the end of chain.
+     * </div>
+     * @param collectionName the collection to perform operation on.
+     */
     @Override
-    public void setMongoData() {
-        throw new UnsupportedOperationException("MongoDB does not support parsing string as query, please use specific method for CRUD instead.");
+    public MongoDBQuery setMongoData(String collectionName) {
+        this.collection = mongoDatabase.getCollection(collectionName);
+        this.initState = true;
+        return this;
     }
 
-    public int insertMongoData(String collectionName, Document document) {
-        try {
-            MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-            collection.insertOne(document);
-            return 1;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to insert data into collection: " + e.getMessage());
-        }
+    /**
+     * MongoDB insert operation.
+     * @param document the entry to be inserted
+     */
+    public MongoDBQuery insert(Document document) {
+        checkInit();
+
+        InsertOneResult result = collection.insertOne(document);
+
+        rowCount = result.wasAcknowledged() ? 1 : 0;
+
+        return this;
     }
 
-    public int deleteMongoData(String collectionName, Document filter) {
-        try {
-            MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-            DeleteResult result = collection.deleteMany(filter);
-            return (int) result.getDeletedCount();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to insert data into collection: " + e.getMessage());
+    /**
+     * MongoDB delete operation
+     * @param filter condition(s) to match for deletion.
+     */
+    public MongoDBQuery delete(Document filter) {
+        checkInit();
+
+        DeleteResult result = collection.deleteMany(filter);
+
+        rowCount = (int) result.getDeletedCount();
+
+        return this;
+    }
+
+    /**
+     * MongoDB update operation.
+     * @param filter condition(s) to match for updating.
+     * @param update values to update the entries with.
+     */
+    public MongoDBQuery update(Document filter, Document update) {
+        checkInit();
+
+        UpdateResult result = collection.updateMany(filter, update);
+        rowCount = (int) result.getModifiedCount();
+
+        return this;
+    }
+
+    /**
+     * Get the number of entries affected by data operation.
+     * @return number of affected entries.
+     */
+    public int count() {
+        return rowCount;
+    }
+
+    private void checkInit() {
+        if (!initState) {
+            throw new IllegalStateException("missing setMongoData() in the call chain!");
         }
     }
 

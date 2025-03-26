@@ -78,6 +78,8 @@ public class DeleteParser {
         String query;
         if (condition != null && !condition.isBlank()) {
             query = "delete from" + table.getName() + " where " + condition;
+
+            assert SQLdBQuery != null;
             return SQLdBQuery.setDataSQL(query, params);
         } else {
             Field primaryField = null;
@@ -95,6 +97,8 @@ public class DeleteParser {
             Object primaryKeyValue = getPrimaryKeyValue(model, modelClass);
 
             query = "delete from " + table.getName() + " where " + primaryField.getName() + " = ?";
+
+            assert SQLdBQuery != null;
             return SQLdBQuery.setDataSQL(query, primaryKeyValue);
         }
     }
@@ -110,9 +114,10 @@ public class DeleteParser {
             throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
         }
 
+        Document filter;
+
         if (condition != null && !condition.isBlank()) {
-            Document filter = parseCondition(condition, params);
-            return MongoDBQuery.deleteMongoData(collection.getName(), filter);
+            filter = parseCondition(condition, params);
         } else {
             Field primaryField = null;
             for (Field field : modelClass.getDeclaredFields()) {
@@ -132,10 +137,12 @@ public class DeleteParser {
                 throw new IllegalArgumentException("Missing value for primary key!");
             }
 
-            Document filter = new Document(primaryField.getName(),primaryKeyValue);
+            filter = new Document(primaryField.getName(),primaryKeyValue);
 
-            return MongoDBQuery.deleteMongoData(collection.getName(), filter);
+
         }
+        assert MongoDBQuery != null;
+        return MongoDBQuery.setMongoData(collection.getName()).delete(filter).count();
     }
 
     private static <T> Object getPrimaryKeyValue(T model, Class<?> modelClass) throws IllegalAccessException {
@@ -153,8 +160,7 @@ public class DeleteParser {
 
         // Get primary key value
         primaryField.setAccessible(true);
-        Object primaryKeyValue = primaryField.get(model);
-        return primaryKeyValue;
+        return primaryField.get(model);
     }
 
     private Document parseCondition(String condition, Object... params) {
@@ -173,29 +179,14 @@ public class DeleteParser {
             Object value = params[paramIndex++];
 
             switch (operator) {
-                case "=":
-                    filter.append(field, value);
-                    break;
-                case "!=":
-                    filter.append(field, new Document("$ne", value));
-                    break;
-                case ">":
-                    filter.append(field, new Document("$gt", value));
-                    break;
-                case "<":
-                    filter.append(field, new Document("$lt", value));
-                    break;
-                case ">=":
-                    filter.append(field, new Document("$gte", value));
-                    break;
-                case "<=":
-                    filter.append(field, new Document("$lte", value));
-                    break;
-                case "LIKE":
-                    filter.append(field, new Document("$regex", value.toString()).append("$options", "i"));
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown operator syntax: " + operators);
+                case "=" -> filter.append(field, value);
+                case "!=" -> filter.append(field, new Document("$ne", value));
+                case ">" -> filter.append(field, new Document("$gt", value));
+                case "<" -> filter.append(field, new Document("$lt", value));
+                case ">=" -> filter.append(field, new Document("$gte", value));
+                case "<=" -> filter.append(field, new Document("$lte", value));
+                case "LIKE" -> filter.append(field, new Document("$regex", value.toString()).append("$options", "i"));
+                default -> throw new IllegalArgumentException("Unknown operator syntax: " + operators);
             }
         }
 
