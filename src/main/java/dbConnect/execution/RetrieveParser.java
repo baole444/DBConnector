@@ -1,5 +1,6 @@
 package dbConnect.execution;
 
+import com.google.gson.Gson;
 import dbConnect.DataModel;
 import dbConnect.mapper.DocumentInterface;
 import dbConnect.mapper.MongoMapper;
@@ -162,7 +163,7 @@ public class RetrieveParser {
 
         Document projection = new Document();
 
-        Document filter = Document.parse("");
+        Document filter = new Document();
 
         if (jsonFilter != null && !jsonFilter.isBlank()) {
             int filterArgCount;
@@ -204,8 +205,17 @@ public class RetrieveParser {
 
     private String appendPlaceholderValue(String filter, Object[] params, int argCount) {
         for (int i = 0; i < argCount; i++) {
-            String appending = params[i] instanceof String ? "\""
-                    + params[i] + "\"" : params[i].toString();
+            Object param = params[i];
+
+            String appending;
+
+            if (param instanceof String) {
+                appending = "\"" + param + "\"";
+            } else if (param instanceof Number || param instanceof Boolean) {
+                appending = param.toString();
+            } else {
+                appending = new Gson().toJson(params);
+            }
 
             filter = filter.replaceFirst("\\?", appending);
         }

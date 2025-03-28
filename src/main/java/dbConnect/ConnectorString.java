@@ -34,8 +34,8 @@ public class ConnectorString {
     public String getMongoConnectionString() {
         String authArg = "";
 
-        if (user != null & !user.isEmpty()) {
-            authArg = user + ":" + password + "@";
+        if (user != null) {
+            if (!user.isBlank()) authArg = user + ":" + password + "@";
         }
 
         String replicaArg = "";
