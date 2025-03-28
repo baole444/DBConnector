@@ -1,5 +1,6 @@
 package dbConnect.execution;
 
+import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
@@ -67,16 +68,14 @@ public class UpdateParser {
      * @throws SQLException when there is an error occurred during data update.
      */
     public <T> int updateSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
-
-
         Class<?> modelClass = model.getClass();
 
         Table table;
 
         try {
-            table = (Table) modelClass.getMethod("getTable").invoke(null);
+            table = (Table) modelClass.getMethod("getTable").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getTable() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
         }
 
         // Prepare primary key, value to update and the condition
@@ -138,9 +137,9 @@ public class UpdateParser {
         Collection collection;
 
         try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(null);
+            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
         Document filter;

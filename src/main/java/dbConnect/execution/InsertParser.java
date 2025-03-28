@@ -1,6 +1,5 @@
 package dbConnect.execution;
 
-import dbConnect.mapper.DocumentInterface;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
@@ -68,9 +67,9 @@ public class InsertParser {
         Table table;
 
         try {
-            table = (Table) modelClass.getMethod("getTable").invoke(null);
+            table = (Table) modelClass.getMethod("getTable").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getTable() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
         }
 
         // Building SQL command
@@ -111,9 +110,9 @@ public class InsertParser {
         Collection collection;
 
         try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(null);
+            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
         Field[] fields = modelClass.getDeclaredFields();
@@ -157,7 +156,7 @@ public class InsertParser {
                 if (((String) fieldValue).length() > maxLength) {
                     fieldValue = ((String) fieldValue).substring(0, maxLength);
                 }
-                
+
             } else {
                 throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
             }

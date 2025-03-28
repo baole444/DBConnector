@@ -19,7 +19,6 @@ import java.lang.annotation.Target;
  * </code></pre>
  * @since version 1.6
  */
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface MaxLength {

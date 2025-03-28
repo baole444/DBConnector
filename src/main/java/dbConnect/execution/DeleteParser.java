@@ -70,9 +70,9 @@ public class DeleteParser {
         Table table;
 
         try {
-            table = (Table) modelClass.getMethod("getTable").invoke(null);
+            table = (Table) modelClass.getMethod("getTable").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getTable() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
         }
 
         String query;
@@ -109,9 +109,9 @@ public class DeleteParser {
         Collection collection;
 
         try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(null);
+            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
         Document filter;

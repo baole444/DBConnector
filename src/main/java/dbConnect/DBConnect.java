@@ -57,6 +57,7 @@ public class DBConnect {
     public static void initializeSQL() {
         ConnectorString defaultConn = ConnectorString.loadDefaultSQLConnection();
         SQLdBQuery = new SqlDBQuery(defaultConn.getSQLConnectionString(), defaultConn.getUser(), defaultConn.getPassword());
+        MongoDBQuery = null;
     }
 
     /**
@@ -72,6 +73,7 @@ public class DBConnect {
     public static void initializeMongo() {
         ConnectorString defaultConn = ConnectorString.loadDefaultMongoConnection();
         MongoDBQuery = new MongoDBQuery(defaultConn.getMongoConnectionString(), defaultConn.getDatabaseName());
+        SQLdBQuery = null;
     }
 
     /**
@@ -94,6 +96,7 @@ public class DBConnect {
     public static void initializeSQL(String databaseName) {
         ConnectorString connectorString = ConnectorString.setDefaultLocalSQLConnection(databaseName);
         SQLdBQuery = new SqlDBQuery(connectorString.getSQLConnectionString(), connectorString.getUser(), connectorString.getPassword());
+        MongoDBQuery = null;
     }
 
     /**
@@ -114,6 +117,7 @@ public class DBConnect {
     public static void initializeMongo(String databaseName) {
         ConnectorString connectorString = ConnectorString.setDefaultLocalMongoConnection(databaseName);
         MongoDBQuery = new MongoDBQuery(connectorString.getMongoConnectionString(), connectorString.getDatabaseName());
+        SQLdBQuery = null;
     }
 
     /**
@@ -136,6 +140,7 @@ public class DBConnect {
     public static void initializeSQL(String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setCustomLocalSQLConnection(databaseName, portNumber, user, password);
         SQLdBQuery = new SqlDBQuery(connectorString.getSQLConnectionString(), connectorString.getUser(), connectorString.getPassword());
+        MongoDBQuery = null;
     }
 
     /**
@@ -153,6 +158,7 @@ public class DBConnect {
     public static void initializeSQL(String host, String databaseName, int portNumber, String user, String password) {
         ConnectorString connectorString = ConnectorString.setSQLConnection(host, databaseName, portNumber, user, password);
         SQLdBQuery = new SqlDBQuery(connectorString.getSQLConnectionString(), user, password);
+        MongoDBQuery = null;
     }
 
     /**

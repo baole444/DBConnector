@@ -11,6 +11,7 @@ import dbConnect.query.SqlDBQuery;
 import dbConnect.models.enums.Table;
 import org.bson.Document;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -87,18 +88,26 @@ public class RetrieveParser {
 
         Table table;
 
+        T instance;
+
         try {
-            table = (Table) modelClass.getMethod("getTable").invoke(null);
+            instance = modelClass.getDeclaredConstructor().newInstance();
+        }  catch (InvocationTargetException | InstantiationException | NoSuchMethodException e) {
+            throw new RuntimeException("Model '" + modelClass.getName() + "' is missing an empty Constructor.");
+        }
+
+        try {
+            table = (Table) modelClass.getMethod("getTable").invoke(instance);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getTable() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
         }
 
         ResultSetInterface<T> mapper;
 
         try {
-            mapper = (ResultSetInterface<T>) modelClass.getMethod("getTableMap").invoke(null);
+            mapper = (ResultSetInterface<T>) modelClass.getMethod("getTableMap").invoke(instance);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getTableMap() method that return a new instant of mapping method.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTableMap() method that return a new instant of mapping method.");
         }
 
         String query = "select * from " + table.getName();
@@ -129,38 +138,52 @@ public class RetrieveParser {
     private <T> List<T> retrieveMongo(Class<T> modelClass, String jsonFilter, Object... params) throws IllegalAccessException {
         Collection collection;
 
+        T instance;
+
         try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(null);
+            instance = modelClass.getDeclaredConstructor().newInstance();
+        }  catch (InvocationTargetException | InstantiationException | NoSuchMethodException e) {
+            throw new RuntimeException("Model '" + modelClass.getName() + "' is missing an empty Constructor.");
+        }
+
+        try {
+            collection = (Collection) modelClass.getMethod("getCollection").invoke(instance);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
         DocumentInterface<T> mapper;
 
         try {
-            mapper = (DocumentInterface<T>) modelClass.getMethod("getCollectionMap").invoke(null);
+            mapper = (DocumentInterface<T>) modelClass.getMethod("getCollectionMap").invoke(instance);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model is missing a valid getCollectionMap() method that return a new instant of mapping method.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollectionMap() method that return a new instant of mapping method.");
         }
 
         Document projection = new Document();
 
-        int filterArgCount = countFilterParams(jsonFilter);
+        Document filter = Document.parse("");
 
-        if (params.length < filterArgCount) {
-            throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
+        if (jsonFilter != null && !jsonFilter.isBlank()) {
+            int filterArgCount;
+
+            filterArgCount = countFilterParams(jsonFilter);
+
+            if (params.length < filterArgCount) {
+                throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
+            }
+
+            if (params.length > filterArgCount && params[params.length -1] instanceof String) {
+                projection = Document.parse((String) params[params.length - 1]);
+
+                Object[] filterParams = new Object[filterArgCount];
+                System.arraycopy(params, 0, filterParams, 0, filterArgCount);
+
+                params = filterParams;
+            }
+
+            filter = Document.parse(appendPlaceholderValue(jsonFilter, params, filterArgCount));
         }
-
-        if (params.length > filterArgCount && params[params.length -1] instanceof String) {
-            projection = Document.parse((String) params[params.length - 1]);
-
-            Object[] filterParams = new Object[filterArgCount];
-            System.arraycopy(params, 0, filterParams, 0, filterArgCount);
-
-            params = filterParams;
-        }
-
-        Document filter = Document.parse(appendPlaceholderValue(jsonFilter, params, filterArgCount));
 
         MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
 
