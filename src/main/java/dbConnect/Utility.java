@@ -1,5 +1,8 @@
 package dbConnect;
 
+import com.google.gson.Gson;
+import org.bson.types.ObjectId;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Matcher;
@@ -9,7 +12,6 @@ import java.util.regex.Pattern;
  * Some potentially useful utility methods.
  */
 public class Utility {
-
     /**
      * Enums for time formatting, support digit time display with separator of length 1.
      * <div>
@@ -98,5 +100,38 @@ public class Utility {
         } else {
             throw new RuntimeException("Invalid date string format: "  + dateString);
         }
+    }
+
+    public static String appendPlaceholderValue(String filter, Object[] params, int argCount) {
+        for (int i = 0; i < argCount; i++) {
+            Object param = params[i];
+
+            String appending;
+
+            if (param instanceof ObjectId) {
+                appending = "ObjectId(\"" + param + "\")";
+            } else if (param instanceof String) {
+                appending = "\"" + param + "\"";
+            } else if (param instanceof Number || param instanceof Boolean) {
+                appending = param.toString();
+            } else {
+                appending = new Gson().toJson(params);
+            }
+
+            filter = filter.replaceFirst("\\?", appending);
+        }
+
+        return filter;
+    }
+
+    public static int countFilterParams(String filter) {
+        Matcher matcher = Pattern.compile("\\?").matcher(filter);
+        int count = 0;
+
+        while (matcher.find()){
+            count++;
+        }
+
+        return count;
     }
 }

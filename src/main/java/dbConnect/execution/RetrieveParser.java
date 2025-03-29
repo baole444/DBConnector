@@ -2,6 +2,7 @@ package dbConnect.execution;
 
 import com.google.gson.Gson;
 import dbConnect.DataModel;
+import dbConnect.Utility;
 import dbConnect.mapper.DocumentInterface;
 import dbConnect.mapper.MongoMapper;
 import dbConnect.mapper.ResultSetInterface;
@@ -11,6 +12,7 @@ import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.enums.Table;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
@@ -128,7 +130,7 @@ public class RetrieveParser {
      *                   It must contain a method call {@link DataModel#getCollection()}.
      *                   It must contain a method call {@link DataModel#getCollectionMap()}.
      * </p>
-     * @param jsonFilter conditions used for the search.
+     * @param condition conditions used for the search.
      *                   Values are stored in {@code params} and is parsed where placeholder marking {@code ?} is placed.
      * @param params values of {@code jsonFilter} store in corresponding order, the last params can be used for projection.
      * @return a List of instances specified by the data model class that met the {@code jsonFilter} conditions.
@@ -136,7 +138,7 @@ public class RetrieveParser {
      * @throws IllegalAccessException when missing {@link DataModel#getCollection()} or {@link DataModel#getCollectionMap()} method from the data model
      * or accessing the method outside NoSQL scope.
      */
-    private <T> List<T> retrieveMongo(Class<T> modelClass, String jsonFilter, Object... params) throws IllegalAccessException {
+    private <T> List<T> retrieveMongo(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException {
         Collection collection;
 
         T instance;
@@ -165,10 +167,8 @@ public class RetrieveParser {
 
         Document filter = new Document();
 
-        if (jsonFilter != null && !jsonFilter.isBlank()) {
-            int filterArgCount;
-
-            filterArgCount = countFilterParams(jsonFilter);
+        if (condition != null && !condition.isBlank()) {
+            int filterArgCount = Utility.countFilterParams(condition);
 
             if (params.length < filterArgCount) {
                 throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
@@ -183,44 +183,13 @@ public class RetrieveParser {
                 params = filterParams;
             }
 
-            filter = Document.parse(appendPlaceholderValue(jsonFilter, params, filterArgCount));
+            filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
         }
 
         MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
 
         assert mongoDBQuery != null;
         return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
-    }
-
-    private int countFilterParams(String filter) {
-        Matcher matcher = Pattern.compile("\\?").matcher(filter);
-        int count = 0;
-
-        while (matcher.find()){
-            count++;
-        }
-
-        return count;
-    }
-
-    private String appendPlaceholderValue(String filter, Object[] params, int argCount) {
-        for (int i = 0; i < argCount; i++) {
-            Object param = params[i];
-
-            String appending;
-
-            if (param instanceof String) {
-                appending = "\"" + param + "\"";
-            } else if (param instanceof Number || param instanceof Boolean) {
-                appending = param.toString();
-            } else {
-                appending = new Gson().toJson(params);
-            }
-
-            filter = filter.replaceFirst("\\?", appending);
-        }
-
-        return filter;
     }
 
     /**

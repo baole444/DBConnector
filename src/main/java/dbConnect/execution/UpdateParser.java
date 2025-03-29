@@ -1,5 +1,6 @@
 package dbConnect.execution;
 
+import dbConnect.Utility;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
@@ -142,12 +143,16 @@ public class UpdateParser {
             throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
-        Document filter;
+        Document filter = new Document();
 
-        if (condition !=null && !condition.isBlank()) {
-            filter = parseCondition(condition, params);
-        } else {
-            filter = new Document();
+        if (condition != null && !condition.isBlank()) {
+            int filterArgCount = Utility.countFilterParams(condition);
+
+            if (params.length < filterArgCount) {
+                throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
+            }
+
+            filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
         }
 
         Document updateFields = new Document();

@@ -1,12 +1,15 @@
 package dbConnect.execution;
 
 import dbConnect.DataModel;
+import dbConnect.Utility;
+import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.enums.Table;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
@@ -114,30 +117,36 @@ public class DeleteParser {
             throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
-        Document filter;
+        Document filter = new Document();
 
         if (condition != null && !condition.isBlank()) {
-            filter = parseCondition(condition, params);
+            int filterArgCount = Utility.countFilterParams(condition);
+
+            if (params.length < filterArgCount) {
+                throw new IllegalArgumentException("Not enough filter parameters for declared filter argument");
+            }
+
+            filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
         } else {
-            Field primaryField = null;
+            Field _idField = null;
             for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(PrimaryField.class)) {
-                    primaryField = field;
+                if (field.isAnnotationPresent(MongoOnly.class) && field.getName().equals("_id")) {
+                    _idField = field;
                     break;
                 }
             }
 
-            if (primaryField == null) {
-                throw new IllegalArgumentException("Model is missing a primary field!");
+            if (_idField == null) {
+                throw new IllegalArgumentException("Model is missing an _id field!");
             }
 
-            Object primaryKeyValue = getPrimaryKeyValue(model, modelClass);
+            ObjectId idKeyValue = (ObjectId) _idField.get(model);
 
-            if (primaryKeyValue == null) {
-                throw new IllegalArgumentException("Missing value for primary key!");
+            if (idKeyValue == null) {
+                throw new IllegalArgumentException("Missing value for _id key!");
             }
 
-            filter = new Document(primaryField.getName(),primaryKeyValue);
+            filter = new Document(_idField.getName(), idKeyValue);
 
 
         }
@@ -161,35 +170,5 @@ public class DeleteParser {
         // Get primary key value
         primaryField.setAccessible(true);
         return primaryField.get(model);
-    }
-
-    private Document parseCondition(String condition, Object... params) {
-        Document filter = new Document();
-
-        List<String> operators = Arrays.asList("=", ">", "<", ">=", "<=", "!=", "LIKE");
-
-        Pattern pattern = Pattern.compile("([a-zA-Z0-9_]+)\\s*(=|>|<|>=|<=|!=|LIKE)\\s*\\?");
-        Matcher matcher = pattern.matcher(condition);
-
-        int paramIndex = 0;
-
-        while (matcher.find() && paramIndex < params.length) {
-            String field = matcher.group(1);
-            String operator = matcher.group(2);
-            Object value = params[paramIndex++];
-
-            switch (operator) {
-                case "=" -> filter.append(field, value);
-                case "!=" -> filter.append(field, new Document("$ne", value));
-                case ">" -> filter.append(field, new Document("$gt", value));
-                case "<" -> filter.append(field, new Document("$lt", value));
-                case ">=" -> filter.append(field, new Document("$gte", value));
-                case "<=" -> filter.append(field, new Document("$lte", value));
-                case "LIKE" -> filter.append(field, new Document("$regex", value.toString()).append("$options", "i"));
-                default -> throw new IllegalArgumentException("Unknown operator syntax: " + operators);
-            }
-        }
-
-        return filter;
     }
 }
