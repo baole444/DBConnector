@@ -9,7 +9,7 @@ An abstraction for JDBC and MongoDB data query tasks.
 ## Feature:
 - Parsing query statements base on data model.
 - Insert, Update, Delete, Retrieve data with ease.
-- (WIP) MongoDB support.
+- MongoDB support.
 
 ## Installation:
 This project uses Gradle (8.7) for easy import of dependencies and build tasks, make sure to add this to your `build.gradle`:
@@ -26,48 +26,53 @@ dependencies {
     implementation fileTree('Lib') { include '*.jar' }
     implementation("org.mongodb:mongodb-driver-sync:5.3.1")
     implementation("org.mongodb:bson:5.3.1")
+    implementation("com.google.code.gson:gson:2.12.1")
 }
 ```
 For additional setup, please see the project's [build.gradle](https://github.com/baole444/DBConnector/blob/main/build.gradle) file
 
 > [!IMPORTANT]   
-> Enums used by the system (such as table name) is statically complied at runtime and cannot be added. 
+> Enums used by the system (such as table/collection name) is statically complied at runtime and cannot be added. 
 > If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.
 
 Create a folder call `Lib` within your project and put the `DBConnect-<version>.jar` inside (You can skip this if you use the source code directly).<br>
 Make sure to also put the `mysql-connector-j-<version>.jar` inside if you don't have it as your project dependencies yet.
 
-### Create a data model Class (modelClass):
-The current abstraction allows user to create their own data model following the supported structure.
-With each attribute represent a column and its name<br>
+### Create a data model Class:
+The current abstraction allows user to create their own data model following the supported structure
+with each attribute represent a column and its name.<br>
+This abstraction had provided a `DataModel<T>` interface for required method within a data model.
 
-Let's take a look at a MySql Script of a table and create your model from it.
-#### Example table:
-```sql
--- Example table for merchandise category
-create table merch_category (
-    merch_cat_id int not null auto_increment,
-    merch_cat_name varchar(100) not null,
-    merch_cat_taxrate decimal,
-    primary key (merch_cat_id)
-);
-```
 
 #### Annotation for an attribute:
-Currently, the system allows three types of annotation to mark which field is managed by the database server, which is a primary key and which is not null.<br>
-In the example, the `merch_cat_id` column is a primary key managed by server. So we need to tell the system what it is.
+Currently, the system supports these following annotation:
+- `@AutomaticField` for field managed by the database.
+- `@PrimaryField` for (SQL) primary key field.
+- `@MaxLength` for limit a field's string length. The default value for it is 255.
+- `MongoOnly` for limit field access to MongoDB only.
+- `@NotNullField` for field that can’t be nullable.
+
+Examples:
 ```java
-    @AutomaticField @PrimaryField
-    private int merch_cat_id;
-```
-If you want to constrain a column's value to be not null add `@NotNullField` annotation to it.
-```java
-    @NotNullField
-    private String merch_cat_name;
+import dbConnect.models.*;
+import org.bson.types.ObjectId;
+
+@AutomaticField @PrimaryField @MaxLength(36)
+private String id;
+
+@MongoOnly @AutomaticField
+private ObjectId _id;
+
+@MaxLength // Not specified length will default to 255.
+private String text;
+
+@NotNullField @MaxLength(36)
+private String foreign_key;
 ```
 
 > [!NOTE]   
-> @AutomaticField will always take priority over @NotNullField
+> Annotations are not required, but it will give a hint on parser to manage your query better.
+> `@AutomaticField` will always take priority over `@NotNullField`.
 
 #### Table Enums class:
 Current system store table's name in enums, make sure to update `dbConnect.models.enums.Table` to included your data model. At this point, you can also update `DataModel` enum if you decided to use it.
@@ -79,11 +84,6 @@ public enum Table {
     Supplier("supplier"),
     MerchCategory("merch_category"),
     Merch("merchandise"),
-    Customer("customer"),
-    ImportBill("import_bill"),
-    ImportItem("import_bill_items"),
-    RetailBill("retail_bill"),
-    RetailItem("retail_bill_items"),
     Generic("generic"),
     // Add your table enums here
      ExampleEnums("example_table_name");
@@ -167,14 +167,6 @@ public class MerchCategory {
         this.merch_cat_name = merchcatname;
         this.merch_cat_taxrate = merchcattaxrate;
     }
-    /*
-    @Override
-    public String toString() {
-        return "Merch category ID: " + merch_cat_id +
-                "\nMerch category name: " + merch_cat_name +
-                "\nMerch category tax rate: " + merch_cat_taxrate;
-    }
-     */
     
     // Allow parsing the class with desired output
     @Override

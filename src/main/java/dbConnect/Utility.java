@@ -110,8 +110,12 @@ public class Utility {
 
             if (param instanceof ObjectId) {
                 appending = "ObjectId(\"" + param + "\")";
-            } else if (param instanceof String) {
-                appending = "\"" + param + "\"";
+            } else if (param instanceof String strParam) {
+                if (strParam.startsWith("/") && strParam.endsWith("/")) {
+                    appending = strParam;
+                } else {
+                    appending = "\"" + strParam + "\"";
+                }
             } else if (param instanceof Number || param instanceof Boolean) {
                 appending = param.toString();
             } else {

@@ -6,10 +6,12 @@ import dbConnect.mapper.*;
 import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
+import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,6 +19,9 @@ import java.sql.SQLException;
 public class Merchandise extends DataModel<Merchandise> {
     @AutomaticField @PrimaryField @MaxLength(36)
     private String merch_id;
+
+    @MongoOnly @AutomaticField
+    private ObjectId _id;
 
     @NotNullField @MaxLength(100)
     private String merch_name;
@@ -60,12 +65,30 @@ public class Merchandise extends DataModel<Merchandise> {
         this.sup_id = supid;
     }
 
+    public Merchandise(ObjectId id, String merchname, float merchimportcost, float merchretailprice, float merch_taxrate, int merchcatid, String supid) {
+        this._id = id;
+        this.merch_name = merchname;
+        this.merch_import_cost = merchimportcost;
+        this.merch_retail_price = merchretailprice;
+        this.merch_taxrate = merch_taxrate;
+        this.merch_cat_id = merchcatid;
+        this.sup_id = supid;
+    }
+
     public String getMerch_id() {
         return merch_id;
     }
 
     public void setMerch_id(String merch_id) {
         this.merch_id = merch_id;
+    }
+
+    public ObjectId get_id() {
+        return _id;
+    }
+
+    public void set_id(ObjectId _id) {
+        this._id = _id;
     }
 
     public String getMerch_name() {
@@ -138,7 +161,7 @@ public class Merchandise extends DataModel<Merchandise> {
     public static class MerchandiseMongoMap implements DocumentInterface<Merchandise> {
         @Override
         public Merchandise map(Document document) throws MongoException {
-            String id = document.getString("merch_id");
+            ObjectId id = document.getObjectId("_id");
             String name = document.getString("merch_name");
             float importCost = document.getDouble("merch_import_cost").floatValue();
             float retailPrice = document.getDouble("merch_retail_price").floatValue();
