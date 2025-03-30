@@ -26,13 +26,13 @@ public class Utility {
         MM_DD_YYYY("(\\d{2})\\D+(\\d{2})\\D+(\\d{4})"),
         YYYY_MM_DD("(\\d{4})\\D+(\\d{2})\\D+(\\d{2})");
 
-        private final String regex;
+        private final Pattern regex;
 
         TimeFormat(String regex) {
-            this.regex = regex;
+            this.regex = Pattern.compile(regex);
         }
 
-        public String getRegex() {
+        public Pattern getRegex() {
             return regex;
         }
     }
@@ -66,7 +66,7 @@ public class Utility {
      * @return {@link java.util.Date} Object from the given date string.
      */
     public static java.util.Date parseDate(String dateString, TimeFormat timeFormat) {
-        Pattern pattern = Pattern.compile(timeFormat.getRegex());
+        Pattern pattern = timeFormat.getRegex();
         Matcher matcher = pattern.matcher(dateString);
 
         if (matcher.matches()) {
@@ -102,7 +102,48 @@ public class Utility {
         }
     }
 
+    /**
+     * Convert {@code Date} object to String presentation.
+     * @param date the date object of convert.
+     * @param separator the string use for separation between date field.
+     * @param timeFormat the date order of the string following {@link TimeFormat} supported enums.
+     * @return A string presentation of the date object.
+     * @throws IllegalArgumentException Invalid enum of {@link TimeFormat}.
+     */
+    public static String parseDate(java.util.Date date, String separator, TimeFormat timeFormat) throws IllegalArgumentException {
+        String parsedDate;
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        String day = Integer.toString(calendar.get(Calendar.DAY_OF_MONTH));
+        String month = Integer.toString(calendar.get(Calendar.MONTH));
+        String year = Integer.toString(calendar.get(Calendar.YEAR));
+
+        switch (timeFormat) {
+            case DD_MM_YYYY -> parsedDate = day + separator + month + separator + year;
+            case MM_DD_YYYY -> parsedDate = month + separator + day + separator + year;
+            case YYYY_MM_DD -> parsedDate = year + separator + month + separator + day;
+            default -> throw new IllegalArgumentException("Unknown enum for TimeFormat");
+        }
+
+        return parsedDate;
+    }
+
+    // Internal parsing method.
     public static String appendPlaceholderValue(String filter, Object[] params, int argCount) {
+        if (filter.isEmpty()) {
+            filter = "{}";
+        } else {
+            if (!filter.startsWith("{")) {
+                filter = "{" + filter;
+            }
+
+            if (!filter.endsWith("}")) {
+                filter = filter + "}";
+            }
+        }
+
         for (int i = 0; i < argCount; i++) {
             Object param = params[i];
 
@@ -128,6 +169,7 @@ public class Utility {
         return filter;
     }
 
+    // Internal params counter.
     public static int countFilterParams(String filter) {
         Matcher matcher = Pattern.compile("\\?").matcher(filter);
         int count = 0;
