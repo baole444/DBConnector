@@ -276,7 +276,7 @@ To initialize the project, you need to call the initialize method from DBConnect
 
 It can also be called during runtime that will reset the connection.
 
-Switching between MongoDB and MySQL connection can simply be done by calling either `DBConnect.initializeSQL()` or `DBConnect.initializeMongo()`
+Switching between MongoDB and MySQL connection can simply be done by calling either `DBConnect.initializeSQL()` or `DBConnect.initializeMongo()`.
 
 ##### Example initialization:
 The initialize method of DBConnect has various overloads to fit your need. In this example we will connect to a local database on default settings, named `store_db`. 
@@ -286,6 +286,7 @@ import dbConnect.*;
 public class Main {
     public static void main(String[] args){
         DBConnect.initializeSQL("store_db");
+        // DBConnect.initializeMongo("store_db");
     }
 }
 ```
@@ -293,11 +294,17 @@ However, if you also want the call to be shorter,
 you can modify the default string method `defaultConn()`
 in `dbConnect.query.ConnectorString` to match your database's information.
 ```java
-    public static ConnectorString defaultConn() {
-        return new ConnectorString("localhost", 3306, "store_db", "root", "root");
-    }
+public static ConnectorString loadDefaultSQLConnection() {
+    return new ConnectorString("localhost", 3306, "your_database_name", "root", "root");
+}
+
+public static ConnectorString loadDefaultMongoConnection() {
+    return new ConnectorString("localhost", 27017, "your_database_name", null, null, null);
+}
 ```
 After this, you can simply call `DBConnect.initializeSQL()`. Then you’re good to go!
+
+It is pretty much the same for MongoDB, with `initializeMongo()` instead
 
 ### DBConnect example usage:
 Assumed you initialized the DBConnect and created a Data Model called Merchandise.
@@ -326,7 +333,7 @@ public void getExampleSQL(String id) {
     }
 }
 
-public void getExampleSQL(ObjectId id) {
+public void getExampleMongo(ObjectId id) {
     // In this case, we are searching base on _id
     // Make sure to try-catch for parsing id error.
     // Starting and ending "{}" bracket can be ommited.
