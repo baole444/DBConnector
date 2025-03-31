@@ -1,17 +1,19 @@
-package dbConnect.mapper;
+package dbConnect.map;
+
+import dbConnect.mapper.ResultSetInterface;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * An implementation of {@link DataMapper} for SQL mapping using {@link ResultSet}
+ * An implementation of {@link DataMap} for SQL mapping using {@link ResultSet}
  * @param <T> a {@code DataModel} Object that required parsing.
  * @see ResultSetInterface
  */
-public class SQLMapper<T> implements DataMapper<T, ResultSet> {
+public class SQLMap<T> implements DataMap<T, ResultSet> {
     private final ResultSetInterface<T> mapper;
 
-    public SQLMapper(ResultSetInterface<T> mapper) {
+    public SQLMap(ResultSetInterface<T> mapper) {
         this.mapper = mapper;
     }
 

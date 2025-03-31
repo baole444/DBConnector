@@ -4,8 +4,8 @@ import com.mongodb.client.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
-import dbConnect.mapper.MongoMapper;
-import dbConnect.mapper.SQLMapper;
+import dbConnect.map.MongoMap;
+import dbConnect.map.SQLMap;
 import org.bson.Document;
 
 import java.sql.SQLException;
@@ -34,7 +34,7 @@ public class MongoDBQuery implements DBInterface {
      * @param <T> Type of the data model
      */
     @Override
-    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model) {
+    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMap<T> model) {
         List<T> rows = new ArrayList<>();
 
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
@@ -127,7 +127,7 @@ public class MongoDBQuery implements DBInterface {
     }
 
     @Override
-    public <T> List<T> loadSQLData(String query, SQLMapper<T> model, Object... params) throws SQLException {
+    public <T> List<T> loadSQLData(String query, SQLMap<T> model, Object... params) throws SQLException {
         throw new UnsupportedOperationException("SQL operation not allowed in Mongo queries.");
     }
 

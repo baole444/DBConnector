@@ -1,7 +1,7 @@
 package dbConnect.query;
 
-import dbConnect.mapper.MongoMapper;
-import dbConnect.mapper.SQLMapper;
+import dbConnect.map.MongoMap;
+import dbConnect.map.SQLMap;
 import org.bson.Document;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,7 +16,7 @@ public interface DBInterface {
      * @param <T> Object
      * @throws SQLException when there is an error occurred during execution.
      */
-    <T> List<T> loadSQLData(String query, SQLMapper<T> model, Object... params) throws SQLException;
+    <T> List<T> loadSQLData(String query, SQLMap<T> model, Object... params) throws SQLException;
 
     /**
      * A low level method to fetch data from a Mongo database server.
@@ -25,7 +25,7 @@ public interface DBInterface {
      * @return {@link List} of instances of a specified data model.
      * @param <T> Object
      */
-    <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model);
+    <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMap<T> model);
 
     /**
      * A low level method to update data with an SQL database server.

@@ -1,24 +1,20 @@
 package dbConnect.execution;
 
-import com.google.gson.Gson;
 import dbConnect.DataModel;
 import dbConnect.Utility;
 import dbConnect.mapper.DocumentInterface;
-import dbConnect.mapper.MongoMapper;
+import dbConnect.map.MongoMap;
 import dbConnect.mapper.ResultSetInterface;
-import dbConnect.mapper.SQLMapper;
+import dbConnect.map.SQLMap;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.enums.Table;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Handle retrieval query (select query) parsing using reflection.
@@ -68,7 +64,7 @@ public class RetrieveParser {
     }
 
     /**
-     * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMapper, Object...)}
+     * A method invokes {@link SqlDBQuery#loadSQLData(String, SQLMap, Object...)}
      * to fetch data for a {@link dbConnect.DataModel} model.
      * <p>
      * @param modelClass a Data Model Class.
@@ -88,6 +84,10 @@ public class RetrieveParser {
      */
     private <T> List<T> retrieveSQL(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
         if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Table table;
 
@@ -118,13 +118,13 @@ public class RetrieveParser {
             query += " where " + whereTerm;
         }
 
-        SQLMapper<T> sqlMapper = new SQLMapper<>(mapper);
+        SQLMap<T> sqlMapper = new SQLMap<>(mapper);
 
         return sqlDBQuery.loadSQLData(query, sqlMapper, params);
     }
 
     /**
-     * A method invoke {@link MongoDBQuery#loadMongoData(String, Document, Document, MongoMapper)}
+     * A method invoke {@link MongoDBQuery#loadMongoData(String, Document, Document, MongoMap)}
      * to fetch data for a {@link dbConnect.DataModel} model.
      * @param modelClass a Data Model Class.
      *                   It must contain a method call {@link DataModel#getCollection()}.
@@ -139,6 +139,12 @@ public class RetrieveParser {
      * or accessing the method outside NoSQL scope.
      */
     private <T> List<T> retrieveMongo(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException {
+        if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
+
         Collection collection;
 
         T instance;
@@ -152,7 +158,7 @@ public class RetrieveParser {
         try {
             collection = (Collection) modelClass.getMethod("getCollection").invoke(instance);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
         }
 
         DocumentInterface<T> mapper;
@@ -186,9 +192,8 @@ public class RetrieveParser {
             filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
         }
 
-        MongoMapper<T> mongoMapper = new MongoMapper<>(mapper);
+        MongoMap<T> mongoMapper = new MongoMap<>(mapper);
 
-        assert mongoDBQuery != null;
         return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
     }
 

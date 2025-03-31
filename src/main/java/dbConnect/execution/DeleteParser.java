@@ -13,26 +13,22 @@ import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Handle delete query parsing using reflection.
  */
 public class DeleteParser {
-    private final SqlDBQuery SQLdBQuery;
-    private final MongoDBQuery MongoDBQuery;
+    private final SqlDBQuery sqlDBQuery;
+    private final MongoDBQuery mongoDBQuery;
 
     /**
      * Constructor of {@link DeleteParser}.
      * For NoSQL query, see {@link #DeleteParser(MongoDBQuery)}
-     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
+     * @param sqlDBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public DeleteParser(SqlDBQuery SQLdBQuery) {
-        this.SQLdBQuery = SQLdBQuery;
-        this.MongoDBQuery = null;
+    public DeleteParser(SqlDBQuery sqlDBQuery) {
+        this.sqlDBQuery = sqlDBQuery;
+        this.mongoDBQuery = null;
     }
 
     /**
@@ -41,14 +37,14 @@ public class DeleteParser {
      * @param mongoDBQuery an instance of {@link MongoDBQuery#MongoDBQuery(String, String)}
      */
     public DeleteParser(MongoDBQuery mongoDBQuery) {
-        this.MongoDBQuery = mongoDBQuery;
-        this.SQLdBQuery = null;
+        this.mongoDBQuery = mongoDBQuery;
+        this.sqlDBQuery = null;
     }
 
     public <T> int delete(T model, String condition, Object... params) throws IllegalAccessException, SQLException {
-        if (MongoDBQuery == null) {
+        if (mongoDBQuery == null) {
             return deleteSQL(model, condition, params);
-        } else if (SQLdBQuery == null) {
+        } else if (sqlDBQuery == null) {
             return deleteMongo(model, condition, params);
         } else {
             return -1;
@@ -68,7 +64,13 @@ public class DeleteParser {
      * @throws SQLException when there is an error occurred during data deletion.
      */
     public <T> int deleteSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
+        if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
+
         Class<?> modelClass = model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Table table;
 
@@ -79,11 +81,9 @@ public class DeleteParser {
         }
 
         String query;
+
         if (condition != null && !condition.isBlank()) {
             query = "delete from" + table.getName() + " where " + condition;
-
-            assert SQLdBQuery != null;
-            return SQLdBQuery.setDataSQL(query, params);
         } else {
             Field primaryField = null;
             for (Field field : modelClass.getDeclaredFields()) {
@@ -97,17 +97,22 @@ public class DeleteParser {
                 throw new IllegalArgumentException("Model is missing a primary field!");
             }
 
-            Object primaryKeyValue = getPrimaryKeyValue(model, modelClass);
+            params[0] = getPrimaryKeyValue(model, modelClass);
 
             query = "delete from " + table.getName() + " where " + primaryField.getName() + " = ?";
-
-            assert SQLdBQuery != null;
-            return SQLdBQuery.setDataSQL(query, primaryKeyValue);
         }
+
+        return sqlDBQuery.setDataSQL(query, params);
     }
 
     public <T> int deleteMongo(T model, String condition, Object... params) throws IllegalAccessException {
+        if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
+
         Class<?> modelClass = model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Collection collection;
 
@@ -117,7 +122,7 @@ public class DeleteParser {
             throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
         }
 
-        Document filter = new Document();
+        Document filter;
 
         if (condition != null && !condition.isBlank()) {
             int filterArgCount = Utility.countFilterParams(condition);
@@ -147,11 +152,9 @@ public class DeleteParser {
             }
 
             filter = new Document(_idField.getName(), idKeyValue);
-
-
         }
-        assert MongoDBQuery != null;
-        return MongoDBQuery.setMongoData(collection.getName()).delete(filter).count();
+
+        return mongoDBQuery.setMongoData(collection.getName()).delete(filter).count();
     }
 
     private static <T> Object getPrimaryKeyValue(T model, Class<?> modelClass) throws IllegalAccessException {

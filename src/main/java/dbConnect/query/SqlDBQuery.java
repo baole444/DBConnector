@@ -1,7 +1,7 @@
 package dbConnect.query;
 
-import dbConnect.mapper.MongoMapper;
-import dbConnect.mapper.SQLMapper;
+import dbConnect.map.MongoMap;
+import dbConnect.map.SQLMap;
 import org.bson.Document;
 
 import java.sql.*;
@@ -19,7 +19,7 @@ import java.util.List;
  * <div>
  * This class contains:
  * <ul>
- *      <li>{@link #loadSQLData(String, SQLMapper, Object...)} fetching data from database server.</li>
+ *      <li>{@link #loadSQLData(String, SQLMap, Object...)} fetching data from database server.</li>
  *      <li>{@link #setDataSQL(String, Object...)} insert or modify data from database server.</li>
  * </ul>
  * </div>
@@ -52,7 +52,7 @@ public class SqlDBQuery implements DBInterface {
      * @throws SQLException when there is an error occurred during execution.
      */
     @Override
-    public <T> List<T> loadSQLData(String query, SQLMapper<T> model, Object... params) throws SQLException {
+    public <T> List<T> loadSQLData(String query, SQLMap<T> model, Object... params) throws SQLException {
         List<T> rows = new ArrayList<>();
 
         try (Connection conn = DriverManager.getConnection(dbUrl, user, password);
@@ -103,7 +103,7 @@ public class SqlDBQuery implements DBInterface {
     }
 
     @Override
-    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMapper<T> model) {
+    public <T> List<T> loadMongoData(String collectionName, Document filter, Document projection, MongoMap<T> model) {
         throw new UnsupportedOperationException("MongoDB operation not allowed in SQL queries.");
     }
 

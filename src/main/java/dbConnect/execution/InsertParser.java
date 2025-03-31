@@ -1,5 +1,8 @@
 package dbConnect.execution;
 
+import dbConnect.DataModel;
+import dbConnect.models.constrain.MongoOnly;
+import dbConnect.models.constrain.MySQLOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
@@ -18,17 +21,17 @@ import java.util.List;
  * Handle insert query parsing using reflection.
  */
 public class InsertParser {
-    private final SqlDBQuery SQLdBQuery;
-    private final MongoDBQuery MongoDBQuery;
+    private final SqlDBQuery sqlDBQuery;
+    private final MongoDBQuery mongoDBQuery;
 
     /**
      * Constructor of {@link InsertParser}.
      * For noSQL query, see {@link #InsertParser(MongoDBQuery)}
-     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
+     * @param sqlDBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public InsertParser(SqlDBQuery SQLdBQuery) {
-        this.SQLdBQuery = SQLdBQuery;
-        this.MongoDBQuery = null;
+    public InsertParser(SqlDBQuery sqlDBQuery) {
+        this.sqlDBQuery = sqlDBQuery;
+        this.mongoDBQuery = null;
     }
 
     /**
@@ -37,14 +40,14 @@ public class InsertParser {
      * @param mongoDBQuery an instance of {@link MongoDBQuery#MongoDBQuery(String, String)}
      */
     public InsertParser(MongoDBQuery mongoDBQuery) {
-        this.MongoDBQuery = mongoDBQuery;
-        this.SQLdBQuery = null;
+        this.mongoDBQuery = mongoDBQuery;
+        this.sqlDBQuery = null;
     }
 
     public <T> int insert(T model) throws IllegalAccessException, SQLException {
-        if (MongoDBQuery == null) {
+        if (mongoDBQuery == null) {
             return insertSQL(model);
-        } else if (SQLdBQuery == null) {
+        } else if (sqlDBQuery == null) {
             return insertMongo(model);
         } else {
             return -1;
@@ -61,7 +64,13 @@ public class InsertParser {
      * @throws SQLException when there is an error occurred during data insertion.
      */
     public <T> int insertSQL(T model) throws IllegalAccessException, SQLException {
+        if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
+
         Class<?> modelClass = model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         // Get table name using reflection
         Table table;
@@ -81,8 +90,8 @@ public class InsertParser {
         for (Field field : fields) {
             field.setAccessible(true);
 
-            // Ignore auto generated fields
-            if (field.isAnnotationPresent(AutomaticField.class)) { continue; }
+            // Ignore auto generated and mongoDB only fields
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class)) { continue; }
 
             Object fieldValue = getFieldValue(model, field);
 
@@ -97,15 +106,19 @@ public class InsertParser {
             placeholders.setLength(placeholders.length() -2);
         }
 
-
         String query = "insert into " + table.getName() + " (" + columns + ") values (" + placeholders + ")";
 
-        assert SQLdBQuery != null;
-        return SQLdBQuery.setDataSQL(query, val.toArray());
+        return sqlDBQuery.setDataSQL(query, val.toArray());
     }
 
     public <T> int insertMongo(T model) throws IllegalAccessException {
+        if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
+
         Class<?> modelClass = model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Collection collection;
 
@@ -121,14 +134,13 @@ public class InsertParser {
         for (Field field : fields) {
             field.setAccessible(true);
 
-            if (field.isAnnotationPresent(AutomaticField.class)) { continue; }
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) { continue; }
 
             Object fieldValue = getFieldValue(model, field);
             document.append(field.getName(),fieldValue);
         }
 
-        assert MongoDBQuery != null;
-        return MongoDBQuery.setMongoData(collection.getName()).insert(document).count();
+        return mongoDBQuery.setMongoData(collection.getName()).insert(document).count();
     }
 
     /**

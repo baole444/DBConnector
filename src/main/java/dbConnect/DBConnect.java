@@ -4,6 +4,7 @@ import dbConnect.execution.DeleteParser;
 import dbConnect.execution.InsertParser;
 import dbConnect.execution.RetrieveParser;
 import dbConnect.execution.UpdateParser;
+import dbConnect.query.ConnectorString;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 

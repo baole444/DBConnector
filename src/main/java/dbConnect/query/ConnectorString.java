@@ -1,4 +1,4 @@
-package dbConnect;
+package dbConnect.query;
 
 public class ConnectorString {
     private final String host;

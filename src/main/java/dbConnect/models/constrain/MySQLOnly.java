@@ -6,14 +6,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface limits an attribute to only be available in MongoDB scope.<br>
+ * This interface limits an attribute to only be available in MySQL scope.<br>
  * Example usage:
  * <pre><code>
- * {@literal @}MongoOnly
- *  String _id;
+ * {@literal @}MySQLOnly
+ *  String table_id;
  * </code></pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface MongoOnly {
+public @interface MySQLOnly {
 }

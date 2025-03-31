@@ -4,7 +4,8 @@ package dbConnect.models.enums;
  * Enums responsible for parsing collection's name.
  */
 public enum Collection {
-    Merch("merchandise");
+    //Merch("merchandise"),
+    Generic("generic");
 
     private final String CollectionName;
 

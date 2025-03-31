@@ -1,7 +1,9 @@
 package dbConnect.execution;
 
+import dbConnect.DataModel;
 import dbConnect.Utility;
 import dbConnect.models.constrain.MongoOnly;
+import dbConnect.models.constrain.MySQLOnly;
 import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
@@ -23,17 +25,17 @@ import java.util.regex.Pattern;
  * Handle update query parsing using reflection.
  */
 public class UpdateParser {
-    private final SqlDBQuery SQLdBQuery;
-    private final MongoDBQuery MongoDBQuery;
+    private final SqlDBQuery sqlDBQuery;
+    private final MongoDBQuery mongoDBQuery;
 
     /**
      * Constructor of {@link UpdateParser}.
      * For NoSQL query, see {@link #UpdateParser(MongoDBQuery)}
-     * @param SQLdBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
+     * @param sqlDBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
      */
-    public UpdateParser(SqlDBQuery SQLdBQuery) {
-        this.SQLdBQuery = SQLdBQuery;
-        this.MongoDBQuery = null;
+    public UpdateParser(SqlDBQuery sqlDBQuery) {
+        this.sqlDBQuery = sqlDBQuery;
+        this.mongoDBQuery = null;
     }
 
     /**
@@ -42,14 +44,14 @@ public class UpdateParser {
      * @param mongoDBQuery an instance of {@link MongoDBQuery#MongoDBQuery(String, String)}
      */
     public UpdateParser(MongoDBQuery mongoDBQuery) {
-        this.MongoDBQuery = mongoDBQuery;
-        this.SQLdBQuery = null;
+        this.mongoDBQuery = mongoDBQuery;
+        this.sqlDBQuery = null;
     }
 
     public <T> int update(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
-        if (MongoDBQuery == null) {
+        if (mongoDBQuery == null) {
             return updateSQL(model, condition, params);
-        } else if (SQLdBQuery == null) {
+        } else if (sqlDBQuery == null) {
             return updateMongo(model, condition, params);
         } else {
             return -1;
@@ -69,7 +71,13 @@ public class UpdateParser {
      * @throws SQLException when there is an error occurred during data update.
      */
     public <T> int updateSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
+        if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
+
         Class<?> modelClass = model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Table table;
 
@@ -97,6 +105,8 @@ public class UpdateParser {
                 primaryKeyValue = field.get(model);
                 continue;
             }
+
+            if (field.isAnnotationPresent(MongoOnly.class)) continue;
 
             Object fieldValue = getFieldValue(model, field);
 
@@ -128,12 +138,17 @@ public class UpdateParser {
             val.add(primaryKeyValue);
         }
 
-        assert SQLdBQuery != null;
-        return  SQLdBQuery.setDataSQL(query, val.toArray());
+        return  sqlDBQuery.setDataSQL(query, val.toArray());
     }
 
     public <T> int updateMongo(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException {
+        if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
+
         Class<?> modelClass =model.getClass();
+
+        if (!DataModel.class.isAssignableFrom(modelClass)) {
+            System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
+        }
 
         Collection collection;
 
@@ -170,6 +185,8 @@ public class UpdateParser {
                 continue;
             }
 
+            if (field.isAnnotationPresent(MySQLOnly.class)) continue;
+
             Object fieldValue = getFieldValue(model, field);
             if (fieldValue != null) {
                 updateFields.append(field.getName(), fieldValue);
@@ -188,8 +205,7 @@ public class UpdateParser {
             filter.append(primaryField.getName(), primaryKeyValue);
         }
 
-        assert MongoDBQuery != null;
-        return MongoDBQuery.setMongoData(collection.getName()).update(filter, new Document("$set", updateFields)).count();
+        return mongoDBQuery.setMongoData(collection.getName()).update(filter, new Document("$set", updateFields)).count();
     }
 
     /**
@@ -221,35 +237,4 @@ public class UpdateParser {
         }
         return fieldValue;
     }
-
-    private Document parseCondition(String condition, Object... params) {
-        Document filter = new Document();
-
-        List<String> operators = Arrays.asList("=", ">", "<", ">=", "<=", "!=", "LIKE");
-
-        Pattern pattern = Pattern.compile("([a-zA-Z0-9_]+)\\s*(=|>|<|>=|<=|!=|LIKE)\\s*\\?");
-        Matcher matcher = pattern.matcher(condition);
-
-        int paramIndex = 0;
-
-        while (matcher.find() && paramIndex < params.length) {
-            String field = matcher.group(1);
-            String operator = matcher.group(2);
-            Object value = params[paramIndex++];
-
-            switch (operator) {
-                case "=" -> filter.append(field, value);
-                case "!=" -> filter.append(field, new Document("$ne", value));
-                case ">" -> filter.append(field, new Document("$gt", value));
-                case "<" -> filter.append(field, new Document("$lt", value));
-                case ">=" -> filter.append(field, new Document("$gte", value));
-                case "<=" -> filter.append(field, new Document("$lte", value));
-                case "LIKE" -> filter.append(field, new Document("$regex", value.toString()).append("$options", "i"));
-                default -> throw new IllegalArgumentException("Unknown operator syntax: " + operators);
-            }
-        }
-
-        return filter;
-    }
-
 }
