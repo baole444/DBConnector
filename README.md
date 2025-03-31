@@ -307,7 +307,7 @@ After this, you can simply call `DBConnect.initializeSQL()`. Then you’re good 
 It is pretty much the same for MongoDB, with `initializeMongo()` instead
 
 ### DBConnect example usage:
-Assumed you initialized the DBConnect and created a Data Model called Merchandise.
+Assumed you initialized the DBConnect and created a Data Model called Example.
 #### Get data from a table:
 
 ```java
