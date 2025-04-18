@@ -63,7 +63,7 @@ public class DeleteParser {
      * @throws IllegalArgumentException when missing an attribute marked with {@link PrimaryField} annotation or that attribute's value is missing.
      * @throws SQLException when there is an error occurred during data deletion.
      */
-    public <T> int deleteSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
+    private <T> int deleteSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
         if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
 
         Class<?> modelClass = model.getClass();
@@ -105,7 +105,7 @@ public class DeleteParser {
         return sqlDBQuery.setDataSQL(query, params);
     }
 
-    public <T> int deleteMongo(T model, String condition, Object... params) throws IllegalAccessException {
+    private <T> int deleteMongo(T model, String condition, Object... params) throws IllegalAccessException {
         if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
 
         Class<?> modelClass = model.getClass();

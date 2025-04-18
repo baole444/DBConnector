@@ -2,25 +2,12 @@ plugins {
     id 'java'
     id 'application'
     id 'maven-publish'
-    id 'org.javamodularity.moduleplugin' version '1.8.12'
 }
 
-sourceSets {
-    dbConnect {
-        java {
-            srcDir 'src/main/java'
-            include 'dbConnect/**'
-        }
-    }
-}
-
-group 'Arsky.TCB'
-version '1.7'
+group = archive_group
+version = db_connector_version
 
 repositories {
-    flatDir {
-        dirs 'Lib'
-    }
     mavenCentral()
 }
 
@@ -28,20 +15,36 @@ ext {
     junitVersion = '5.10.2'
 }
 
-sourceCompatibility = '21'
-targetCompatibility = '21'
+dependencies {
+    implementation "com.mysql:mysql-connector-j:${mysql_connector_version}"
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
+    implementation "org.mongodb:mongodb-driver-sync:${mongodb_version}"
+    implementation "org.mongodb:bson:${mongodb_version}"
+
+    implementation "com.google.code.gson:gson:${google_gson}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 }
 
-dependencies {
-    implementation fileTree('Lib') { include '*.jar' }
-    implementation("org.mongodb:mongodb-driver-sync:5.3.1")
-    implementation("org.mongodb:bson:5.3.1")
-    implementation("com.google.code.gson:gson:2.12.1")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+def targetJavaVersion = 21
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        it.options.release.set(targetJavaVersion)
+    }
+}
+
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+
+    withSourcesJar()
+    withJavadocJar()
 }
 
 test {
@@ -50,32 +53,10 @@ test {
 
 def buildDestination = getLayout().getBuildDirectory().get()
 
-tasks.register('buildConnector', Jar) {
-    group = 'build'
-    description = 'Database Connector and SQL statement parser.'
-    from sourceSets.dbConnect.output
-    archiveBaseName = 'DBConnect'
-    archiveVersion = project.version
+
+tasks.named('jar', Jar).configure {
+    dependsOn javadoc
+    archiveBaseName = artifact_name
+    archiveVersion = db_connector_version
     destinationDirectory = file("${buildDestination}/libs")
-}
-
-tasks.register('buildJavadoc', Javadoc) {
-    group = 'documentation'
-    description = 'Generate JavaDoc.'
-    source = sourceSets.dbConnect.allJava
-    classpath = sourceSets.dbConnect.compileClasspath
-    destinationDir = file("${buildDestination}/docs/javadoc")
-}
-
-tasks.register('javadocJar', Jar) {
-    group = 'documentation'
-    description = 'Turn html generated documents to jar file.'
-    dependsOn buildJavadoc
-    from buildJavadoc.destinationDir
-    archiveClassifier.set('javadoc')
-}
-
-artifacts {
-    archives(buildConnector)
-    archives(javadocJar)
 }

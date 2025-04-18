@@ -175,18 +175,12 @@ public class DBConnect {
     /**
      * A method to get data from the database.
      * It uses the input class to determine where to pull data from.
-     * <div>
-     * Function:<br>
-     * - Invoke {@link #initCheck()} to validate scope declaration,
-     * then create instance of {@link RetrieveParser}.<br>
-     * - Invoke {@link RetrieveParser#retrieve(Class, String, Object...)}
-     * </div>
      *
      * @param modelClass a user desired data model class extending {@link DataModel}.<br>
      *                   Call ({@code DataModel.class}).
      * @param conditions conditions on how to search, using {@code ?} as placeholders.
      * @param params value of mentioned conditions in order.
-     *
+     * @param <T> type of the data model to retrieve.
      * @return List of the desired object. If no data is found, an empty list is returned.
      */
     public static <T> List<T> retrieve(Class<T> modelClass, String conditions, Object... params) {
@@ -213,15 +207,10 @@ public class DBConnect {
     /**
      * A method to get data from the database. It uses the input class to determine what table to pull from.
      * This method allows pulling all data of a model.
-     * <div>
-     * Function:<br>
-     * - Invoke {@link #initCheck()} to validate scope declaration, then create instance of {@link RetrieveParser}.<br>
-     * - Invoke {@link RetrieveParser#retrieveAll(Class)}
-     * </div>
      *
      * @param modelClass a user desired data model class extending {@link DataModel}.<br>
      *                   Call ({@code DataModel.class}).
-     *
+     * @param <T> type of the data model to retrieve.
      * @return List of the desired object. If no data is found, an empty list is returned.
      */
     public static <T> List<T> retrieveAll(Class<T> modelClass) {
@@ -229,15 +218,11 @@ public class DBConnect {
     }
 
     /**
-     * A method to insert data to the database. It uses the input class to determine what table to push to.
-     * <div>
-     * Function:<br>
-     * - Invoke {@link #initCheck()} to validate scope declaration, then create instance of {@link InsertParser}.<br>
-     * - Invoke {@link InsertParser#insert(Object)}
-     * </div>
+     * A method to insert data to the database.
+     * It uses the input class to determine what table to push to.
      *
      * @param dataModelObject a user desired a data model object extending {@link DataModel}, carrying data that need to be inserted.
-     *
+     * @param <T> type of the data model to insert.
      * @return {@code true} if insert successfully.<br>
      *          {@code false} if insert failed. <br>
      *          Insert successful state is determined by the inserted row count.
@@ -265,15 +250,11 @@ public class DBConnect {
     }
 
     /**
-     * A method to update data to the database. It uses the input class to determine what row in a table to update.
-     * <div>
-     * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link UpdateParser}.<br>
-     * - Invoke {@link UpdateParser#update(Object, String, Object...)}
-     * </div>
+     * A method to update data to the database.
+     * It uses the input class to determine what row in a table to update.
      *
      * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
-     *
+     * @param <T> type of the data model to update.
      * @return {@code true} if update successfully.<br>
      *          {@code false} if update failed. <br>
      *          Update successful state is determined by the updated row count.
@@ -300,6 +281,18 @@ public class DBConnect {
         }
     }
 
+    /**
+     * A method to update data to the database.
+     * It uses the input class to determine what row in a table to update.
+     *
+     * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
+     * @param conditions a string of conditions to perform update on.
+     * @param params value of each condition in order.
+     * @param <T> type of the data model to update.
+     * @return {@code true} if update successfully.<br>
+     *          {@code false} if update failed. <br>
+     *          Update successful state is determined by the updated row count.
+     */
     public static <T> boolean update(T model, String conditions, Object... params) {
         initCheck();
         UpdateParser updateParser = null;
@@ -323,15 +316,11 @@ public class DBConnect {
     }
 
     /**
-     * A method to delete data to the database. It uses the input class to determine what row in a table to delete.
-     * <div>
-     * Function:<br>
-     * - Invoke {@link #initCheck()} to check if {@link #SQLdBQuery} is null or not, then create instance of {@link DeleteParser}.<br>
-     * - Invoke {@link DeleteParser#delete(Object, String, Object...)}
-     * </div>
+     * A method to delete data to the database.
+     * It uses the input class to determine what row in a table to delete.
      *
      * @param model a user desired {@code dataModel} object, must contain at least the primary key field initiated.
-     *
+     * @param <T> type of the data model to delete.
      * @return {@code true} if delete successfully.<br>
      *          {@code false} if delete failed. <br>
      *          delete successful state is determined by the deleted row count.
@@ -358,6 +347,18 @@ public class DBConnect {
         }
     }
 
+    /**
+     * A method to delete data to the database.
+     * It uses the input class to determine what row in a table to delete.
+     *
+     * @param model a user desired {@code dataModel} object.
+     * @param conditions a string of conditions to perform delete on.
+     * @param params value of each condition in order.
+     * @param <T> type of the data model to delete.
+     * @return {@code true} if delete successfully.<br>
+     *          {@code false} if delete failed. <br>
+     *          delete successful state is determined by the deleted row count.
+     */
     public static <T> boolean delete(T model, String conditions, Object... params) {
         initCheck();
         DeleteParser deleteParser = null;

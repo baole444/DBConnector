@@ -1,7 +1,5 @@
 package dbConnect.mapper;
 
-import dbConnect.map.SQLMap;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 

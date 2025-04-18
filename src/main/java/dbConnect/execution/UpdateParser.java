@@ -12,14 +12,12 @@ import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Handle update query parsing using reflection.
@@ -48,6 +46,17 @@ public class UpdateParser {
         this.sqlDBQuery = null;
     }
 
+    /**
+     * A method to determine the correct inner update method.
+     * @param model an instance of a Data Model.
+     * @param condition a strings of condition to perform update on.
+     * @param params value of each condition in order.
+     * @return the count of updated rows.
+     * @param <T> type of the data model to update.
+     * @throws IllegalAccessException data model class is missing required method.
+     * @throws IllegalArgumentException failed to find update value.
+     * @throws SQLException error while performing MySQL query.
+     */
     public <T> int update(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
         if (mongoDBQuery == null) {
             return updateSQL(model, condition, params);
@@ -60,17 +69,19 @@ public class UpdateParser {
 
     /**
      * A method invokes {@link SqlDBQuery#setDataSQL(String, Object...)}
-     * to update data from an {@code Object} model base on it's {@link PrimaryField} to the database server.
-     * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.<br>
-     *              It must have an attribute marked with {@link PrimaryField} annotation.
+     * to update data from an {@code Object} model base on conditions,
+     * or it's {@link PrimaryField} to the database server.
+     * @param model an instance of a Data Model.
+     * @param condition a strings of condition to perform update on.
+     * @param params value of each condition in order.
+     * @param <T> type of the data model to update.
      * @return the count of updated rows.
-     * @param <T> Object
      * @throws IllegalAccessException when missing {@code getTable()} method from the data model.<br>
      *                               When missing an attribute marked with {@link PrimaryField} annotation or that attribute's value is missing.
      * @throws IllegalArgumentException when a field marked with {@link NotNullField} is missing its value.
      * @throws SQLException when there is an error occurred during data update.
      */
-    public <T> int updateSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
+    private <T> int updateSQL(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException, SQLException {
         if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
 
         Class<?> modelClass = model.getClass();
@@ -141,7 +152,18 @@ public class UpdateParser {
         return  sqlDBQuery.setDataSQL(query, val.toArray());
     }
 
-    public <T> int updateMongo(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException {
+    /**
+     * A method invokes {@link MongoDBQuery#update(Document, Document)}
+     * to update data from an {@code Object} model base on conditions,
+     * @param model an instance of a Data Model.
+     * @param condition a strings of condition to perform update on.
+     * @param params value of each condition in order.
+     * @param <T> type of the data model to update.
+     * @return the count of updated rows.
+     * @throws IllegalAccessException when missing {@code getCollection()} method from the data model.<br>
+     * @throws IllegalArgumentException when a field marked with {@link NotNullField} is missing its value.
+     */
+    private <T> int updateMongo(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException {
         if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
 
         Class<?> modelClass =model.getClass();
@@ -171,21 +193,20 @@ public class UpdateParser {
         }
 
         Document updateFields = new Document();
-        Field primaryField = null;
-        Object primaryKeyValue = null;
+        Field _idField = null;
+        ObjectId _idValue = null;
 
         Field[] fields = modelClass.getDeclaredFields();
 
         for (Field field : fields) {
             field.setAccessible(true);
-
-            if (field.isAnnotationPresent(PrimaryField.class)) {
-                primaryField = field;
-                primaryKeyValue = field.get(model);
+            if (field.isAnnotationPresent(MongoOnly.class) && field.getName().equals("_id")) {
+                _idField = field;
+                _idValue = (ObjectId) _idField.get(model);
                 continue;
             }
 
-            if (field.isAnnotationPresent(MySQLOnly.class)) continue;
+            if (field.isAnnotationPresent(MySQLOnly.class) || field.isAnnotationPresent(PrimaryField.class)) continue;
 
             Object fieldValue = getFieldValue(model, field);
             if (fieldValue != null) {
@@ -198,11 +219,11 @@ public class UpdateParser {
         }
 
         if (condition == null || condition.isBlank()) {
-            if (primaryField == null || primaryKeyValue == null) {
-                throw new IllegalAccessException("Missing value for primary key or the key field itself!");
+            if (_idField == null || _idValue == null) {
+                throw new IllegalAccessException("Missing value for _id or the field itself!");
             }
 
-            filter.append(primaryField.getName(), primaryKeyValue);
+            filter.append(_idField.getName(), _idValue);
         }
 
         return mongoDBQuery.setMongoData(collection.getName()).update(filter, new Document("$set", updateFields)).count();
@@ -213,7 +234,7 @@ public class UpdateParser {
      * @param model an instance of a Data Model.
      * @param field an attribute extracted from a model.
      * @return value of the field as an {@code object}.
-     * @param <T> Object.
+     * @param <T> type of the data model.
      * @throws IllegalAccessException when failed to extract field's details.
      */
     private static <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {

@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
  * {@literal @}MongoOnly
  *  String _id;
  * </code></pre>
+ * @since version 2.0
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

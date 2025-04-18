@@ -1,8 +1,3 @@
-> [!WARNING]
-> Project under heavy refactoring with NoSQL MongoDB support.
-> Implementation might introduce breaking change.
-> Since version 1.7
-
 # General Database Connector
 An abstraction for JDBC and MongoDB data query tasks.
 
@@ -12,18 +7,16 @@ An abstraction for JDBC and MongoDB data query tasks.
 - MongoDB support.
 
 ## Installation:
-This project uses Gradle (8.7) for easy import of dependencies and build tasks, make sure to add this to your `build.gradle`:
-### build.gradle:
-```
+This project uses Gradle (version 8.13) for importation of dependencies and build tasks, 
+make sure to add this to your `build.gradle`:
+### Example build.gradle:
+```Groovy
 repositories {
-    flatDir {
-        dirs 'Lib'
-    }
     mavenCentral()
 }
 
 dependencies {
-    implementation fileTree('Lib') { include '*.jar' }
+    implementation("com.mysql:mysql-connector-j:9.2.0")
     implementation("org.mongodb:mongodb-driver-sync:5.3.1")
     implementation("org.mongodb:bson:5.3.1")
     implementation("com.google.code.gson:gson:2.12.1")
@@ -31,18 +24,41 @@ dependencies {
 ```
 For additional setup, please see the project's [build.gradle](https://github.com/baole444/DBConnector/blob/main/build.gradle) file
 
-> [!IMPORTANT]   
-> Enums used by the system (such as table/collection name) is statically complied at runtime and cannot be added. 
-> If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.
+<details>
+    <summary>Build and compile it for yourself</summary>
 
-Create a folder call `Lib` within your project and put the `DBConnect-<version>.jar` inside (You can skip this if you use the source code directly).<br>
-Make sure to also put the `mysql-connector-j-<version>.jar` inside if you don't have it as your project dependencies yet.
+Since version 2.0, the project will drop java module as it is unnecessary.<br>
+The project build script uses gradle's standard build and jar command.<br>
+
+If wrapper is missing:
+```console
+gradle wrapper
+```
+To clean build, run:
+```console
+./gradlew clean build jar
+```
+Or if you don't need to clean the build directory:
+```console
+./gradlew build jar
+```
+
+The task will automatically generate three jars under `build\libs` which are:
+- `DBConnector-version-source.jar`
+- `DBConnector-version-javadoc.jar`
+- `DBConnector-version.jar` (standalone)
+
+</details>
+
+> [!IMPORTANT]   
+> Enums used by the system (such as table/collection name) is statically complied at runtime and cannot be added.<br>
+> If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.<br>
+> This might behavior will change in later versions.
 
 ### Create a data model Class:
 The current abstraction allows user to create their own data model following the supported structure
 with each attribute represent a column and its name.<br>
 This abstraction had provided a `DataModel<T>` interface for required method within a data model.
-
 
 #### Annotation for an attribute:
 Currently, the system supports these following annotation:
@@ -143,7 +159,10 @@ public class Example extends DataModel<Example> {
 > Missing this field could cause some unexpected behaviour.
 > This will be changed in a later version of the package.
 
-Here is the implement of the [Example data model](https://github.com/baole444/DBConnector/blob/main/Example%20Models/Example.java) that supports both mySQL and mongoDB:
+Here is the implement of the [Example data model](https://github.com/baole444/DBConnector/blob/main/Example%20Models/Example.java)
+that supports both mySQL and mongoDB:
+<details>
+    <summary><b>Example.class</b></summary>
 
 ```java
 package your_package;
@@ -270,6 +289,7 @@ public class Example extends DataModel<Example> {
     }
 }
 ```
+</details>
 
 ### DBConnect initialization:
 To initialize the project, you need to call the initialize method from DBConnect in your main class or where your start-up initialization is.
@@ -308,7 +328,9 @@ It is pretty much the same for MongoDB, with `initializeMongo()` instead
 
 ### DBConnect example usage:
 Assumed you initialized the DBConnect and created a Data Model called Example.
-#### Get data from a table:
+
+<details>
+    <summary>Get data from a table</summary>
 
 ```java
 public void getExample() {
@@ -348,8 +370,11 @@ public void getExampleMongo(ObjectId id) {
     }
 }
 ```
+</details>
 
-#### Insert data into a model:
+<details>
+    <summary>Insert data into a model</summary>
+
 ```java
 // Insert a customer name "Ben" with a balance of 100.5
 public void insertExample(String name, float balance) {
@@ -366,8 +391,11 @@ public void insertExample(String name, float balance) {
 
 insertExample("Ben", 100.5);
 ```
+</details>
 
-#### Update data of a model:
+<details>
+    <summary>Update data of a model</summary>
+
 ```java
 
 public void updateExample(String name, Example value) {
@@ -396,8 +424,11 @@ If you call `DBConnect.update(instance)`,
 the parser will default to `PrimaryField` or `MongoOnly` field of that instance of data model.
 If this is what you wanted,
 make sure to initiate the instance with at least primary key field not null or mongo only field not null.
+</details>
 
-#### Delete data of a model;
+<details>
+    <summary>Delete data of a model</summary>
+
 ```java
 public void deleteExample(String name, Example instance) {
     String condition;
@@ -423,3 +454,4 @@ If you call `DBConnect.delete(instance)`,
 the parser will default to `PrimaryField` or `MongoOnly` field of that instance of data model.
 If this is what you wanted,
 make sure to initiate the instance with at least primary key field not null or mongo only field not null.
+</details>

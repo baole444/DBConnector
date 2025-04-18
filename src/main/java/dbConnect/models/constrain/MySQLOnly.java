@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
  * {@literal @}MySQLOnly
  *  String table_id;
  * </code></pre>
+ * @since version 2.0
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

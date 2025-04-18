@@ -24,7 +24,6 @@ public class RetrieveParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;
 
-
     /**
      * Constructor of {@link RetrieveParser}.
      * For noSQL query, see {@link #RetrieveParser(MongoDBQuery)}
@@ -52,6 +51,8 @@ public class RetrieveParser {
      * @param params parameters of the conditions in order and optional projection field (NoSQL only).
      * @return a List of instances specified by the data model class that met the {@code condition} conditions.
      * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @throws IllegalAccessException data model class is missing required methods.
+     * @throws SQLException error while performing MySQL query.
      */
     public <T> List<T> retrieve(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException, SQLException {
         if (mongoDBQuery == null) {
@@ -203,6 +204,8 @@ public class RetrieveParser {
      * @param modelClass a data model class extending {@link DataModel}.
      * @return a List of all instances specified by the data model class.
      * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @throws IllegalAccessException When incorrect scope access.
+     * @throws SQLException error while performing MySQL query.
      */
     public <T> List<T> retrieveAll(Class<T> modelClass) throws IllegalAccessException, SQLException {
         return retrieve(modelClass, null);

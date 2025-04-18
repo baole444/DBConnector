@@ -44,6 +44,14 @@ public class InsertParser {
         this.sqlDBQuery = null;
     }
 
+    /**
+     * A method to determine the inner insert method.
+     * @param model an instance of a Data Model
+     * @return the count of inserted rows.
+     * @param <T> the data model to perform insert to.
+     * @throws IllegalAccessException data model class is missing required method.
+     * @throws SQLException error while performing MySQL query.
+     */
     public <T> int insert(T model) throws IllegalAccessException, SQLException {
         if (mongoDBQuery == null) {
             return insertSQL(model);
@@ -59,11 +67,11 @@ public class InsertParser {
      * to insert data from an {@code Object} model.
      * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.
      * @return the count of inserted rows.
-     * @param <T> Object
+     * @param <T> the data model to perform insert to.
      * @throws IllegalAccessException when missing {@code getTable()} method from the data model.
      * @throws SQLException when there is an error occurred during data insertion.
      */
-    public <T> int insertSQL(T model) throws IllegalAccessException, SQLException {
+    private <T> int insertSQL(T model) throws IllegalAccessException, SQLException {
         if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
 
         Class<?> modelClass = model.getClass();
@@ -111,7 +119,7 @@ public class InsertParser {
         return sqlDBQuery.setDataSQL(query, val.toArray());
     }
 
-    public <T> int insertMongo(T model) throws IllegalAccessException {
+    private <T> int insertMongo(T model) throws IllegalAccessException {
         if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
 
         Class<?> modelClass = model.getClass();
