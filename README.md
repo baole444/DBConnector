@@ -65,8 +65,8 @@ Currently, the system supports these following annotation:
 - `@AutomaticField` for field managed by the database.
 - `@PrimaryField` for (SQL) primary key field.
 - `@MaxLength` for limit a field's string length. The default value for it is 255.
-- `MongoOnly` for limit field access to MongoDB only.
-- `MySQLOnly` for limit field access to MySQL only
+- `@MongoOnly` for limit field access to MongoDB only.
+- `@MySQLOnly` for limit field access to MySQL only
 - `@NotNullField` for field that can’t be null.
 
 Examples:
