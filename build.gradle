@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'maven-publish'
     id 'org.javamodularity.moduleplugin' version '1.8.12'
 }
 
@@ -47,13 +48,15 @@ test {
     useJUnitPlatform()
 }
 
+def buildDestination = getLayout().getBuildDirectory().get()
+
 tasks.register('buildConnector', Jar) {
     group = 'build'
     description = 'Database Connector and SQL statement parser.'
     from sourceSets.dbConnect.output
     archiveBaseName = 'DBConnect'
     archiveVersion = project.version
-    destinationDirectory = file("${buildDir}/libs")
+    destinationDirectory = file("${buildDestination}/libs")
 }
 
 tasks.register('buildJavadoc', Javadoc) {
@@ -61,7 +64,7 @@ tasks.register('buildJavadoc', Javadoc) {
     description = 'Generate JavaDoc.'
     source = sourceSets.dbConnect.allJava
     classpath = sourceSets.dbConnect.compileClasspath
-    destinationDir = file("${buildDir}/docs/javadoc")
+    destinationDir = file("${buildDestination}/docs/javadoc")
 }
 
 tasks.register('javadocJar', Jar) {

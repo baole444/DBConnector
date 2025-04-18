@@ -17,12 +17,12 @@ import java.util.regex.Pattern;
 public class Utility {
     /**
      * Enums for time formatting, support digit time display with separator of length 1.
-     * <div>
      * Supported time string formats:
-     * <li>{@link #DD_MM_YYYY}</li>
-     * <li>{@link #MM_DD_YYYY}</li>
-     * <li>{@link #YYYY_MM_DD}</li>
-     * </div>
+     * <ul>
+     *      <li>{@link #DD_MM_YYYY}</li>
+     *      <li>{@link #MM_DD_YYYY}</li>
+     *      <li>{@link #YYYY_MM_DD}</li>
+     * </ul>
      */
     public enum TimeFormat {
         DD_MM_YYYY("dd'%s'MM'%s'yyyy"),
