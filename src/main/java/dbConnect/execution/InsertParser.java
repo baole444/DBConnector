@@ -133,7 +133,7 @@ public class InsertParser {
         try {
             collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
         } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Table enum.");
+            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
         }
 
         Field[] fields = modelClass.getDeclaredFields();
