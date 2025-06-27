@@ -12,13 +12,20 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Low level MongoDB operation.
+ */
 public class MongoDBQuery implements DBInterface {
     private final MongoDatabase mongoDatabase;
     private MongoCollection<Document> collection;
     private int rowCount = 0;
     private boolean initState = false;
 
-
+    /**
+     * Default constructor for MongoDBQuery, use to initiate MongoClient instance and mongoDatabase.
+     * @param connectionString the connection string for the MongoDB service.
+     * @param dbName name of the database to connect to.
+     */
     public MongoDBQuery(String connectionString, String dbName) {
         MongoClient mongoClient = MongoClients.create(connectionString);
         this.mongoDatabase = mongoClient.getDatabase(dbName);
@@ -73,6 +80,7 @@ public class MongoDBQuery implements DBInterface {
     /**
      * MongoDB insert operation.
      * @param document the entry to be inserted
+     * @return the current MongoDBQuery instance.
      */
     public MongoDBQuery insert(Document document) {
         checkInit();
@@ -87,6 +95,7 @@ public class MongoDBQuery implements DBInterface {
     /**
      * MongoDB delete operation
      * @param filter condition(s) to match for deletion.
+     * @return the current MongoDBQuery instance.
      */
     public MongoDBQuery delete(Document filter) {
         checkInit();
@@ -102,6 +111,7 @@ public class MongoDBQuery implements DBInterface {
      * MongoDB update operation.
      * @param filter condition(s) to match for updating.
      * @param update values to update the entries with.
+     * @return the current MongoDBQuery instance.
      */
     public MongoDBQuery update(Document filter, Document update) {
         checkInit();

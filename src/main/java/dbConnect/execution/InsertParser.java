@@ -3,12 +3,10 @@ package dbConnect.execution;
 import dbConnect.DataModel;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
-import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.constrain.MaxLength;
-import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
 
@@ -65,10 +63,10 @@ public class InsertParser {
     /**
      * A method invokes {@link SqlDBQuery#setDataSQL(String, Object...)}
      * to insert data from an {@code Object} model.
-     * @param model an instance of a Data Model. It must contain a method call {@code getTable()}.
+     * @param model an instance of a Data Model. It must have at least {@link dbConnect.models.meta.TableName} annotation.
      * @return the count of inserted rows.
      * @param <T> the data model to perform insert to.
-     * @throws IllegalAccessException when missing {@code getTable()} method from the data model.
+     * @throws IllegalAccessException when calling this method outside of SQL scope.
      * @throws SQLException when there is an error occurred during data insertion.
      */
     private <T> int insertSQL(T model) throws IllegalAccessException, SQLException {
@@ -80,16 +78,8 @@ public class InsertParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        // Get table name using reflection
-        Table table;
-
-        try {
-            table = (Table) modelClass.getMethod("getTable").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
-        }
-
         // Building SQL command
+        String tableName = ((DataModel<?>) model).getTableName();
         Field[] fields = modelClass.getDeclaredFields();
         List<Object> val = new ArrayList<>();
         StringBuilder columns = new StringBuilder();
@@ -114,7 +104,7 @@ public class InsertParser {
             placeholders.setLength(placeholders.length() -2);
         }
 
-        String query = "insert into " + table.getName() + " (" + columns + ") values (" + placeholders + ")";
+        String query = "insert into " + tableName + " (" + columns + ") values (" + placeholders + ")";
 
         return sqlDBQuery.setDataSQL(query, val.toArray());
     }
@@ -128,14 +118,7 @@ public class InsertParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        Collection collection;
-
-        try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
-        }
-
+        String collectionName = ((DataModel<?>) model).getCollectionName();
         Field[] fields = modelClass.getDeclaredFields();
         Document document = new Document();
 
@@ -148,7 +131,7 @@ public class InsertParser {
             document.append(field.getName(),fieldValue);
         }
 
-        return mongoDBQuery.setMongoData(collection.getName()).insert(document).count();
+        return mongoDBQuery.setMongoData(collectionName).insert(document).count();
     }
 
     /**

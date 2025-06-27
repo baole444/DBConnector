@@ -22,5 +22,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface MaxLength {
+    /**
+     * Limit the length of a string to be compatible with the database.
+     * @return the maximum length of a string can be, default to 255
+     */
     int value() default 255;
 }

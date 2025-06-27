@@ -13,6 +13,10 @@ import java.sql.SQLException;
 public class SQLMap<T> implements DataMap<T, ResultSet> {
     private final ResultSetInterface<T> mapper;
 
+    /**
+     * SQLMap default constructor.
+     * @param mapper an instance of ResultSetInterface
+     */
     public SQLMap(ResultSetInterface<T> mapper) {
         this.mapper = mapper;
     }

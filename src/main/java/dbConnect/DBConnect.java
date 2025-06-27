@@ -18,7 +18,6 @@ import java.util.List;
  * <div>
  * This class contains:
  * <ul>
- *      <li>{@link #initializeSQL()} initialize DBConnect using default value.</li>
  *      <li>{@link #initializeSQL(String)} initialize DBConnect for a local database server.</li>
  *      <li>{@link #initializeSQL(String, int, String, String)} overload local connection with custom details.</li>
  *      <li>{@link #initializeSQL(String, String, int, String, String)} initialize DBConnect with fully customizable details.</li>
@@ -42,40 +41,6 @@ public class DBConnect {
      * A static instance of {@link MongoDBQuery}.
      */
     private static MongoDBQuery MongoDBQuery;
-
-    /**
-     * Initialization of MySQL Database connection.<br>
-     * This overload fetches the default value from ConnectorString.
-     * <ul>
-     *      <li>host: {@code localhost}</li>
-     *      <li>database: {@code store_db}</li>
-     *      <li>port: {@code 3306}</li>
-     *      <li>user: {@code root}</li>
-     *      <li>password: {@code root}</li>
-     * </ul>
-     * <i><strong>Initialize method should be call before all database query tasks.</strong></i>
-     */
-    public static void initializeSQL() {
-        ConnectorString defaultConn = ConnectorString.loadDefaultSQLConnection();
-        SQLdBQuery = new SqlDBQuery(defaultConn.getSQLConnectionString(), defaultConn.getUser(), defaultConn.getPassword());
-        MongoDBQuery = null;
-    }
-
-    /**
-     * Initialization of Mongo Database connection.<br>
-     * This overload fetches the default value from ConnectorString.
-     * <ul>
-     *      <li>host: {@code localhost}</li>
-     *      <li>database: {@code store_db}</li>
-     *      <li>port: {@code 27017}</li>
-     * </ul>
-     * <i><strong>Initialize method should be call before all database query tasks.</strong></i>
-     */
-    public static void initializeMongo() {
-        ConnectorString defaultConn = ConnectorString.loadDefaultMongoConnection();
-        MongoDBQuery = new MongoDBQuery(defaultConn.getMongoConnectionString(), defaultConn.getDatabaseName());
-        SQLdBQuery = null;
-    }
 
     /**
      * Initialization of MySQL Database connection.<br>
@@ -199,7 +164,6 @@ public class DBConnect {
             return retrieveParser.retrieve(modelClass, conditions, params);
         } catch (Exception e) {
             System.out.println("Failure during data selection: " + e.getMessage());
-            e.printStackTrace();
             return List.of();
         }
     }
@@ -244,7 +208,6 @@ public class DBConnect {
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during insertion: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -276,7 +239,6 @@ public class DBConnect {
             return  successUpdate > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during update: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -310,7 +272,6 @@ public class DBConnect {
             return  successUpdate > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during update: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -342,7 +303,6 @@ public class DBConnect {
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during deletion: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -375,7 +335,6 @@ public class DBConnect {
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during deletion: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }

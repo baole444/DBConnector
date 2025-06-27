@@ -9,15 +9,16 @@ import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
-import dbConnect.models.enums.Collection;
-import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
+import dbConnect.models.meta.*;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@TableName("Example")
+@CollectionName("Example")
 public class Example extends DataModel<Example> {
     @AutomaticField @PrimaryField @MaxLength(36) @MySQLOnly
     private String uuid;
@@ -101,19 +102,6 @@ public class Example extends DataModel<Example> {
             return new Example(id, userName, balance);
         }
     }
-
-
-    @Override
-    public Table getTable() {
-        return Table.Example;
-    }
-
-
-    @Override
-    public Collection getCollection() {
-        return Collection.Example;
-    }
-
 
     @Override
     public ResultSetInterface<Example> getTableMap() {

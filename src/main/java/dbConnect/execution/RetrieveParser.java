@@ -6,10 +6,8 @@ import dbConnect.mapper.DocumentInterface;
 import dbConnect.map.MongoMap;
 import dbConnect.mapper.ResultSetInterface;
 import dbConnect.map.SQLMap;
-import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
-import dbConnect.models.enums.Table;
 import org.bson.Document;
 
 import java.lang.reflect.InvocationTargetException;
@@ -69,7 +67,7 @@ public class RetrieveParser {
      * to fetch data for a {@link dbConnect.DataModel} model.
      * <p>
      * @param modelClass a Data Model Class.
-     *                   It must contain a method call {@link DataModel#getTable()}.
+     *                   It must have at least {@link dbConnect.models.meta.TableName} annotation.
      *                   It must contain a method call {@link DataModel#getTableMap()}.
      * </p>
      * <p>
@@ -79,7 +77,7 @@ public class RetrieveParser {
      * @param params values of {@code whereTerm} store in corresponding order.
      * @return a List of instances specified by the data model class that met the {@code whereTerm} conditions.
      * @param <T> a data model class extending {@link dbConnect.DataModel}
-     * @throws IllegalAccessException when missing {@link DataModel#getTable()} or {@link DataModel#getTableMap()} method from the data model
+     * @throws IllegalAccessException when {@link DataModel#getTableMap()} method from the data model
      * or accessing the method outside SQL scope.
      * @throws SQLException when there is an error occurred during data selection.
      */
@@ -90,8 +88,6 @@ public class RetrieveParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        Table table;
-
         T instance;
 
         try {
@@ -100,11 +96,7 @@ public class RetrieveParser {
             throw new RuntimeException("Model '" + modelClass.getName() + "' is missing an empty Constructor.");
         }
 
-        try {
-            table = (Table) modelClass.getMethod("getTable").invoke(instance);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
-        }
+        String tableName = ((DataModel<?>) instance).getTableName();
 
         ResultSetInterface<T> mapper;
 
@@ -114,7 +106,7 @@ public class RetrieveParser {
             throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTableMap() method that return a new instant of mapping method.");
         }
 
-        String query = "select * from " + table.getName();
+        String query = "select * from " + tableName;
         if (whereTerm != null && !whereTerm.trim().isEmpty()) {
             query += " where " + whereTerm;
         }
@@ -128,7 +120,7 @@ public class RetrieveParser {
      * A method invoke {@link MongoDBQuery#loadMongoData(String, Document, Document, MongoMap)}
      * to fetch data for a {@link dbConnect.DataModel} model.
      * @param modelClass a Data Model Class.
-     *                   It must contain a method call {@link DataModel#getCollection()}.
+     *                   It must have at least {@link dbConnect.models.meta.CollectionName} annotation.
      *                   It must contain a method call {@link DataModel#getCollectionMap()}.
      * </p>
      * @param condition conditions used for the search.
@@ -136,7 +128,7 @@ public class RetrieveParser {
      * @param params values of {@code jsonFilter} store in corresponding order, the last params can be used for projection.
      * @return a List of instances specified by the data model class that met the {@code jsonFilter} conditions.
      * @param <T> a data model class extending {@link dbConnect.DataModel}
-     * @throws IllegalAccessException when missing {@link DataModel#getCollection()} or {@link DataModel#getCollectionMap()} method from the data model
+     * @throws IllegalAccessException when missing {@link DataModel#getCollectionMap()} method from the data model
      * or accessing the method outside NoSQL scope.
      */
     private <T> List<T> retrieveMongo(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException {
@@ -146,8 +138,6 @@ public class RetrieveParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        Collection collection;
-
         T instance;
 
         try {
@@ -156,12 +146,7 @@ public class RetrieveParser {
             throw new RuntimeException("Model '" + modelClass.getName() + "' is missing an empty Constructor.");
         }
 
-        try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(instance);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
-        }
-
+        String collectionName = ((DataModel<?>) instance).getCollectionName();
         DocumentInterface<T> mapper;
 
         try {
@@ -194,8 +179,7 @@ public class RetrieveParser {
         }
 
         MongoMap<T> mongoMapper = new MongoMap<>(mapper);
-
-        return mongoDBQuery.loadMongoData(collection.getName(), filter, projection, mongoMapper);
+        return mongoDBQuery.loadMongoData(collectionName, filter, projection, mongoMapper);
     }
 
     /**

@@ -4,12 +4,10 @@ import dbConnect.DataModel;
 import dbConnect.Utility;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
-import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
-import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -76,8 +74,7 @@ public class UpdateParser {
      * @param params value of each condition in order.
      * @param <T> type of the data model to update.
      * @return the count of updated rows.
-     * @throws IllegalAccessException when missing {@code getTable()} method from the data model.<br>
-     *                               When missing an attribute marked with {@link PrimaryField} annotation or that attribute's value is missing.
+     * @throws IllegalAccessException When missing an attribute marked with {@link PrimaryField} annotation or that attribute's value is missing.
      * @throws IllegalArgumentException when a field marked with {@link NotNullField} is missing its value.
      * @throws SQLException when there is an error occurred during data update.
      */
@@ -88,14 +85,6 @@ public class UpdateParser {
 
         if (!DataModel.class.isAssignableFrom(modelClass)) {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
-        }
-
-        Table table;
-
-        try {
-            table = (Table) modelClass.getMethod("getTable").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
         }
 
         // Prepare primary key, value to update and the condition
@@ -132,19 +121,18 @@ public class UpdateParser {
         }
 
         setTerm.setLength(setTerm.length() - 2); // remove comma and trailing space at the end
-
+        String tableName = ((DataModel<?>) model).getTableName();
         String query;
 
         if (condition != null  && !condition.isBlank()) {
-            query = "update " + table.getName() + " set " + setTerm + " where " + condition;
+            query = "update " + tableName + " set " + setTerm + " where " + condition;
             val.addAll(List.of(params));
         } else {
             if (primaryField == null || primaryKeyValue == null) {
                 throw new IllegalAccessException("Missing value for primary key or the key field itself!");
             }
 
-
-            query = "update " + table.getName() + " set " + setTerm + " where " + primaryField.getName() + " = ?";
+            query = "update " + tableName + " set " + setTerm + " where " + primaryField.getName() + " = ?";
 
             val.add(primaryKeyValue);
         }
@@ -160,24 +148,16 @@ public class UpdateParser {
      * @param params value of each condition in order.
      * @param <T> type of the data model to update.
      * @return the count of updated rows.
-     * @throws IllegalAccessException when missing {@code getCollection()} method from the data model.<br>
+     * @throws IllegalAccessException Calling this method outside of MongoDB scope.
      * @throws IllegalArgumentException when a field marked with {@link NotNullField} is missing its value.
      */
     private <T> int updateMongo(T model, String condition, Object... params) throws IllegalAccessException, IllegalArgumentException {
         if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
 
-        Class<?> modelClass =model.getClass();
+        Class<?> modelClass = model.getClass();
 
         if (!DataModel.class.isAssignableFrom(modelClass)) {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
-        }
-
-        Collection collection;
-
-        try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
         }
 
         Document filter = new Document();
@@ -195,7 +175,7 @@ public class UpdateParser {
         Document updateFields = new Document();
         Field _idField = null;
         ObjectId _idValue = null;
-
+        String collectionName = ((DataModel<?>) model).getCollectionName();
         Field[] fields = modelClass.getDeclaredFields();
 
         for (Field field : fields) {
@@ -226,7 +206,7 @@ public class UpdateParser {
             filter.append(_idField.getName(), _idValue);
         }
 
-        return mongoDBQuery.setMongoData(collection.getName()).update(filter, new Document("$set", updateFields)).count();
+        return mongoDBQuery.setMongoData(collectionName).update(filter, new Document("$set", updateFields)).count();
     }
 
     /**

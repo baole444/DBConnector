@@ -7,15 +7,16 @@ import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.constrain.MongoOnly;
-import dbConnect.models.enums.Collection;
-import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
+import dbConnect.models.meta.*;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@TableName("merchandise")
+@CollectionName("merchandise")
 public class Merchandise extends DataModel<Merchandise> {
     @AutomaticField @PrimaryField @MaxLength(36)
     private String merch_id;
@@ -170,16 +171,6 @@ public class Merchandise extends DataModel<Merchandise> {
             String supplierId = document.getString("sup_id");
             return new Merchandise(id, name, importCost, retailPrice, tax, merchId, supplierId);
         }
-    }
-
-    @Override
-    public Table getTable() {
-        return Table.Merch;
-    }
-
-    @Override
-    public Collection getCollection() {
-        return Collection.Merch;
     }
 
     @Override

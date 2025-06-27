@@ -3,11 +3,9 @@ package dbConnect.execution;
 import dbConnect.DataModel;
 import dbConnect.Utility;
 import dbConnect.models.constrain.MongoOnly;
-import dbConnect.models.enums.Collection;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
-import dbConnect.models.enums.Table;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -41,6 +39,16 @@ public class DeleteParser {
         this.sqlDBQuery = null;
     }
 
+    /**
+     * A method to determine the inner delete method.
+     * @param model an instance of a Data Model
+     * @param condition a set of conditions used for the query
+     * @param params parameters of the conditions in order.
+     * @return number of deleted entries.
+     * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @throws IllegalAccessException when mismatch between scope and inner method call happened.
+     * @throws SQLException occurred when SQL error happened.
+     */
     public <T> int delete(T model, String condition, Object... params) throws IllegalAccessException, SQLException {
         if (mongoDBQuery == null) {
             return deleteSQL(model, condition, params);
@@ -59,7 +67,7 @@ public class DeleteParser {
      * @param params parameters of the conditions in order.
      * @return number of deleted entries.
      * @param <T> a data model class extending {@link dbConnect.DataModel}
-     * @throws IllegalAccessException when missing {@link DataModel#getTable()} method from the class.
+     * @throws IllegalAccessException calling this method without SQL scope.
      * @throws IllegalArgumentException when missing an attribute marked with {@link PrimaryField} annotation or that attribute's value is missing.
      * @throws SQLException when there is an error occurred during data deletion.
      */
@@ -72,18 +80,11 @@ public class DeleteParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        Table table;
-
-        try {
-            table = (Table) modelClass.getMethod("getTable").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getTable() method that return a Table enum.");
-        }
-
+        String tableName = ((DataModel<?>) model).getTableName();
         String query;
 
         if (condition != null && !condition.isBlank()) {
-            query = "delete from" + table.getName() + " where " + condition;
+            query = "delete from" + tableName + " where " + condition;
         } else {
             Field primaryField = null;
             for (Field field : modelClass.getDeclaredFields()) {
@@ -99,7 +100,7 @@ public class DeleteParser {
 
             params[0] = getPrimaryKeyValue(model, modelClass);
 
-            query = "delete from " + table.getName() + " where " + primaryField.getName() + " = ?";
+            query = "delete from " + tableName + " where " + primaryField.getName() + " = ?";
         }
 
         return sqlDBQuery.setDataSQL(query, params);
@@ -114,14 +115,7 @@ public class DeleteParser {
             System.out.println("Warning: '" + modelClass.getName() + " does not extend DataModel, which could lead to missing essential methods.");
         }
 
-        Collection collection;
-
-        try {
-            collection = (Collection) modelClass.getMethod("getCollection").invoke(model);
-        } catch (Exception e) {
-            throw new IllegalAccessException("Model '" + modelClass.getName() + "' is missing a valid getCollection() method that return a Collection enum.");
-        }
-
+        String collectionName = ((DataModel<?>) model).getCollectionName();
         Document filter;
 
         if (condition != null && !condition.isBlank()) {
@@ -154,7 +148,7 @@ public class DeleteParser {
             filter = new Document(_idField.getName(), idKeyValue);
         }
 
-        return mongoDBQuery.setMongoData(collection.getName()).delete(filter).count();
+        return mongoDBQuery.setMongoData(collectionName).delete(filter).count();
     }
 
     private static <T> Object getPrimaryKeyValue(T model, Class<?> modelClass) throws IllegalAccessException {

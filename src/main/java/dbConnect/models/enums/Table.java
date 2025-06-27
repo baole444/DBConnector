@@ -2,10 +2,13 @@ package dbConnect.models.enums;
 
 /**
  * Enums responsible for parsing table's name.
+ * @deprecated since 2.1 - replaced by {@link dbConnect.models.meta.TableName} annotation.
  */
+@Deprecated(since = "2.1")
 public enum Table {
-    //MerchCategory("merch_category"),
-    //Merch("merchandise"),
+    /**
+     * Generic table
+     */
     Generic("generic");
 
     private final String TableName;

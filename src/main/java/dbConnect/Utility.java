@@ -15,6 +15,12 @@ import java.util.regex.Pattern;
  * Some potentially useful utility methods.
  */
 public class Utility {
+
+    /**
+     * Default constructor of Utility.
+     */
+    public Utility () {}
+
     /**
      * Enums for time formatting, support digit time display with separator of length 1.
      * Supported time string formats:
@@ -25,8 +31,19 @@ public class Utility {
      * </ul>
      */
     public enum TimeFormat {
+        /**
+         * Day - Month - Year
+         */
         DD_MM_YYYY("dd'%s'MM'%s'yyyy"),
+
+        /**
+         * Month - Day - Year
+         */
         MM_DD_YYYY("MM'%s'dd'%s'yyyy"),
+
+        /**
+         * Year - Month - Day
+         */
         YYYY_MM_DD("yyyy'%s'MM'%s'dd");
 
         private final String pattern;
@@ -35,6 +52,11 @@ public class Utility {
             this.pattern = pattern;
         }
 
+        /**
+         * Get the date pattern with given separator character.
+         * @param separator the separator string to use
+         * @return time format with custom separator.
+         */
         public String getFormattedPattern(String separator) {
             return String.format(pattern, separator, separator);
         }
@@ -85,6 +107,14 @@ public class Utility {
     }
 
     // Internal parsing method.
+
+    /**
+     * Internal parsing method, appending value for MongoDB queries.
+     * @param filter filtering argument
+     * @param params value of queries' parameters
+     * @param argCount number of argument
+     * @return completed filtering argument with values.
+     */
     public static String appendPlaceholderValue(String filter, Object[] params, int argCount) {
         if (filter.isEmpty()) {
             filter = "{}";
@@ -124,6 +154,12 @@ public class Utility {
     }
 
     // Internal params counter.
+
+    /**
+     * Count the number of parameter for filter argument.
+     * @param filter the string to count.
+     * @return the number of arguments.
+     */
     public static int countFilterParams(String filter) {
         Matcher matcher = Pattern.compile("\\?").matcher(filter);
         int count = 0;

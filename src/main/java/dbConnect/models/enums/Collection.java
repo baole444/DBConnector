@@ -2,9 +2,13 @@ package dbConnect.models.enums;
 
 /**
  * Enums responsible for parsing collection's name.
+ * @deprecated since 2.1, replaced by {@link dbConnect.models.meta.CollectionName} annotation.
  */
+@Deprecated(since = "2.1")
 public enum Collection {
-    //Merch("merchandise"),
+    /**
+     * Generic collection
+     */
     Generic("generic");
 
     private final String CollectionName;

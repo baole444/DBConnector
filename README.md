@@ -51,14 +51,32 @@ The task will automatically generate three jars under `build\libs` which are:
 </details>
 
 > [!IMPORTANT]   
-> Enums used by the system (such as table/collection name) is statically complied at runtime and cannot be added.<br>
-> If you decided to compile the project and add it as a jar file, make sure to update necessary enums or built in data models that you decided.<br>
-> This might behavior will change in later versions.
+> Since `version 2.1`, Table/Collection Enum will be deprecated in favour of Annotation.<br>
+> If you previously used these Enums to register table/collection's name, make sure to migrate to new annotation system.<br>
+> Support and check for these Enum might be removed in future update.
 
 ### Create a data model Class:
 The current abstraction allows user to create their own data model following the supported structure
 with each attribute represent a column and its name.<br>
 This abstraction had provided a `DataModel<T>` interface for required method within a data model.
+
+#### Annotation for table/collection name:
+Since `version 2.1`, you will be able to annotate the name of the table/collection that your data model
+based on at the Class level annotation:
+- `@TableName("your_table_name")` for table name.
+- `@CollectionName("your_collection_name")` for collection name.
+
+Examples:
+```java
+import dbConnect.models.meta.TableName;
+import dbConnect.models.meta.CollectionName;
+
+@TableName("Example")
+@CollectionName("Example")
+public class Example extends DataModel<Example> {
+    // Existing attributes and methods.
+}
+```
 
 #### Annotation for an attribute:
 Currently, the system supports these following annotation:
@@ -88,62 +106,21 @@ private String foreign_key;
 ```
 
 > [!NOTE]   
-> Annotations are not required, but it will give a hint on parser to manage your query better.
+> Annotations are not required, but it will give a hint on parser to manage your query better.<br>
+> Table/Collection name annotation are required, if not, the system will fall back to the deprecated Enum.
 > `@AutomaticField` will always take priority over `@NotNullField`.
-
-#### Table/Collection Enums class:
-For MySQL related methods, the system uses table enums to store the correct table's name.
-Make sure to update `dbConnect.models.enums.Table` to include your data model.
-
-```java
-package dbConnect.models.enums;
-
-public enum Table {
-    // Example of some table enums
-    Example("examples"),
-    Generic("generic");
-    
-    // End code
-    private final String TableName;
-
-    Table(String tableName) {
-        this.TableName = tableName;
-    }
-
-    public String getName() {
-        return TableName;
-    }
-}
-```
-
-For MongoDB related methods, the system uses collection enums to store the correct collection's name.
-Make sure to update `dbConnect.models.enums.Collection` to include your data model.
-
-```java
-package dbConnect.models.enums;
-
-public enum Collection {
-    Example("examples"),
-    Generic("generic");
-
-    private final String CollectionName;
-    
-    Collection(String collectionName) {
-        this.CollectionName = collectionName;
-    }
-    
-    public String getName() {
-        return CollectionName;
-    }
-}
-```
 
 #### Create an example model:
 Your data model should contain some method for initialization such as:
+- Annotation for Table or Collection name depends on your model usage.
 - An empty constructor for getting instance of class. (Required by parsing methods)
 ```java
 import dbConnect.DataModel;
+import dbConnect.models.meta.TableName;
+import dbConnect.models.meta.CollectionName;
 
+@TableName("Example")
+@CollectionName("Example")
 public class Example extends DataModel<Example> {
     public Example() {}
     
@@ -152,7 +129,7 @@ public class Example extends DataModel<Example> {
 ```
 - Necessary getter and setter methods for your convenience.
 - Result mapping to generate new instance of data model during data retrieval.
-- if you extend the built in `DataModel<T>` for your class it will ensure you implement table/collection enum method and return mapper methods.
+- if you extend the built in `DataModel<T>` for your class it will ensure retrieval  method and return mapper methods.
 
 > [!NOTE]
 > Some MongoDB method's fall back logic rely on `@MongoOnly` field with name "_id" to perform ObjectId base execution.
@@ -176,15 +153,17 @@ import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
-import dbConnect.models.enums.Collection;
-import dbConnect.models.enums.Table;
 import dbConnect.models.notnull.NotNullField;
+import dbConnect.models.meta.TableName;
+import dbConnect.models.meta.CollectionName;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@TableName("Example")
+@CollectionName("Example")
 public class Example extends DataModel<Example> {
     @AutomaticField @PrimaryField @MaxLength(36) @MySQLOnly
     private String uuid;
@@ -267,16 +246,6 @@ public class Example extends DataModel<Example> {
             return new Example(id, userName, balance);
         }
     }
-
-    @Override
-    public Table getTable() {
-        return Table.Example;
-    }
-    
-    @Override
-    public Collection getCollection() {
-        return Collection.Example;
-    }
     
     @Override
     public ResultSetInterface<Example> getTableMap() {
@@ -296,7 +265,7 @@ To initialize the project, you need to call the initialize method from DBConnect
 
 It can also be called during runtime that will reset the connection.
 
-Switching between MongoDB and MySQL connection can simply be done by calling either `DBConnect.initializeSQL()` or `DBConnect.initializeMongo()`.
+Switching between MongoDB and MySQL connection can simply be done by calling either `DBConnect.initializeSQL(args)` or `DBConnect.initializeMongo(args)`.
 
 ##### Example initialization:
 The initialize method of DBConnect has various overloads to fit your need. In this example we will connect to a local database on default settings, named `store_db`. 
@@ -310,21 +279,6 @@ public class Main {
     }
 }
 ```
-However, if you also want the call to be shorter,
-you can modify the default string method `defaultConn()`
-in `dbConnect.query.ConnectorString` to match your database's information.
-```java
-public static ConnectorString loadDefaultSQLConnection() {
-    return new ConnectorString("localhost", 3306, "your_database_name", "root", "root");
-}
-
-public static ConnectorString loadDefaultMongoConnection() {
-    return new ConnectorString("localhost", 27017, "your_database_name", null, null, null);
-}
-```
-After this, you can simply call `DBConnect.initializeSQL()`. Then you’re good to go!
-
-It is pretty much the same for MongoDB, with `initializeMongo()` instead
 
 ### DBConnect example usage:
 Assumed you initialized the DBConnect and created a Data Model called Example.
