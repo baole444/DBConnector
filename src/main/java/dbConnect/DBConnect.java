@@ -1,14 +1,15 @@
 package dbConnect;
 
-import dbConnect.execution.DeleteParser;
-import dbConnect.execution.InsertParser;
-import dbConnect.execution.RetrieveParser;
-import dbConnect.execution.UpdateParser;
+import dbConnect.execution.*;
+import dbConnect.models.enums.FetchMethod;
+import dbConnect.models.relationship.OneToMany;
 import dbConnect.query.ConnectorString;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -150,14 +151,7 @@ public class DBConnect {
      */
     public static <T> List<T> retrieve(Class<T> modelClass, String conditions, Object... params) {
         initCheck();
-        RetrieveParser retrieveParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            retrieveParser = new RetrieveParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            retrieveParser = new RetrieveParser(MongoDBQuery);
-        }
+        RetrieveParser retrieveParser = newRetrieveParser();
 
         try {
             assert retrieveParser != null;
@@ -166,6 +160,23 @@ public class DBConnect {
             System.out.println("Failure during data selection: " + e.getMessage());
             return List.of();
         }
+    }
+
+    public static <T> List<T> retrieveRelationships(Class<T> modelClass, String condition, Object... params) {
+        initCheck();
+        List<T> models = retrieve(modelClass, condition, params);
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            assert relationParser != null;
+            for (T model : models) {
+                relationParser.loadRelationships(model, FetchMethod.EAGER);
+            }
+        } catch (Exception e) {
+            System.out.println("Failure during loading relationships: " + e.getMessage());
+        }
+
+        return models;
     }
 
     /**
@@ -181,33 +192,68 @@ public class DBConnect {
         return retrieve(modelClass, null);
     }
 
+    public static <T> List<T> retrieveAllRelationships(Class<T> modelClass) {
+        return retrieveRelationships(modelClass, null);
+    }
+
+    public static <T, R> List<R> retrieveRelated(T model, String foreignKeyName) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            return relationParser.getRelatedRelation(model, foreignKeyName);
+        } catch (Exception e) {
+            System.out.println("Failure during related data selection: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    public static <T> boolean lazyLoadRelationships(T model) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            assert relationParser != null;
+            relationParser.loadRelationships(model, FetchMethod.LAZY);
+            return true;
+        } catch (Exception e) {
+            System.out.println("Failure during lazy loading relationships " + e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * A method to insert data to the database.
      * It uses the input class to determine what table to push to.
      *
-     * @param dataModelObject a user desired a data model object extending {@link DataModel}, carrying data that need to be inserted.
+     * @param model a user desired a data model object extending {@link DataModel}, carrying data that need to be inserted.
      * @param <T> type of the data model to insert.
      * @return {@code true} if insert successfully.<br>
      *          {@code false} if insert failed. <br>
      *          Insert successful state is determined by the inserted row count.
      */
-    public static <T> boolean insert(T dataModelObject) {
+    public static <T> boolean insert(T model) {
         initCheck();
-        InsertParser insertParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            insertParser = new InsertParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            insertParser = new InsertParser(MongoDBQuery);
-        }
+        InsertParser insertParser = newInsertParser();
 
         try {
             assert insertParser != null;
-            int successRow = insertParser.insert(dataModelObject);
+            int successRow = insertParser.insert(model);
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during insertion: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static <T> boolean insertRelationships(T model) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            return relationParser.saveRelationships(model);
+        } catch (Exception e) {
+            System.out.println("Failure during relationship insertion: " + e.getMessage());
             return false;
         }
     }
@@ -224,14 +270,7 @@ public class DBConnect {
      */
     public static <T> boolean update(T model) {
         initCheck();
-        UpdateParser updateParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            updateParser = new UpdateParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            updateParser = new UpdateParser(MongoDBQuery);
-        }
+        UpdateParser updateParser = newUpdateParser();
 
         try {
             assert updateParser != null;
@@ -257,14 +296,7 @@ public class DBConnect {
      */
     public static <T> boolean update(T model, String conditions, Object... params) {
         initCheck();
-        UpdateParser updateParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            updateParser = new UpdateParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            updateParser = new UpdateParser(MongoDBQuery);
-        }
+        UpdateParser updateParser = newUpdateParser();
 
         try {
             assert updateParser != null;
@@ -288,14 +320,7 @@ public class DBConnect {
      */
     public static <T> boolean delete(T model) {
         initCheck();
-        DeleteParser deleteParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            deleteParser = new DeleteParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            deleteParser = new DeleteParser(MongoDBQuery);
-        }
+        DeleteParser deleteParser = newDeleteParser();
 
         try {
             assert deleteParser != null;
@@ -321,14 +346,8 @@ public class DBConnect {
      */
     public static <T> boolean delete(T model, String conditions, Object... params) {
         initCheck();
-        DeleteParser deleteParser = null;
+        DeleteParser deleteParser = newDeleteParser();
 
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            deleteParser = new DeleteParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            deleteParser = new DeleteParser(MongoDBQuery);
-        }
         try {
             assert deleteParser != null;
             int successRow = deleteParser.delete(model, conditions, params);
@@ -337,6 +356,71 @@ public class DBConnect {
             System.out.println("Failure during deletion: " + e.getMessage());
             return false;
         }
+    }
+
+    private static RetrieveParser newRetrieveParser() {
+        RetrieveParser retrieveParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            retrieveParser = new RetrieveParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            retrieveParser = new RetrieveParser(MongoDBQuery);
+        }
+
+        return retrieveParser;
+    }
+
+    private static InsertParser newInsertParser() {
+        InsertParser insertParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            insertParser = new InsertParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            insertParser = new InsertParser(MongoDBQuery);
+        }
+
+        return insertParser;
+    }
+
+    private static UpdateParser newUpdateParser() {
+        UpdateParser updateParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            updateParser = new UpdateParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            updateParser = new UpdateParser(MongoDBQuery);
+        }
+
+        return updateParser;
+    }
+
+    private static DeleteParser newDeleteParser() {
+        DeleteParser deleteParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            deleteParser = new DeleteParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            deleteParser = new DeleteParser(MongoDBQuery);
+        }
+
+        return deleteParser;
+    }
+
+    private static RelationParser newRelationParser() {
+        RelationParser relationParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            relationParser = new RelationParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            relationParser = new RelationParser(MongoDBQuery);
+        }
+
+        return relationParser;
     }
 }
 
