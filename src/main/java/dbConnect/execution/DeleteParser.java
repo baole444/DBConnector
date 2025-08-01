@@ -2,12 +2,10 @@ package dbConnect.execution;
 
 import dbConnect.DataModel;
 import dbConnect.Utility;
-import dbConnect.models.constrain.MongoOnly;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
@@ -18,6 +16,7 @@ import java.sql.SQLException;
 public class DeleteParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;
+    private final FieldReflector fieldReflector;
 
     /**
      * Constructor of {@link DeleteParser}.
@@ -27,6 +26,7 @@ public class DeleteParser {
     public DeleteParser(SqlDBQuery sqlDBQuery) {
         this.sqlDBQuery = sqlDBQuery;
         this.mongoDBQuery = null;
+        this.fieldReflector = new FieldReflector(sqlDBQuery);
     }
 
     /**
@@ -37,6 +37,7 @@ public class DeleteParser {
     public DeleteParser(MongoDBQuery mongoDBQuery) {
         this.mongoDBQuery = mongoDBQuery;
         this.sqlDBQuery = null;
+        this.fieldReflector = new FieldReflector(mongoDBQuery);
     }
 
     /**
@@ -86,19 +87,13 @@ public class DeleteParser {
         if (condition != null && !condition.isBlank()) {
             query = "delete from" + tableName + " where " + condition;
         } else {
-            Field primaryField = null;
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(PrimaryField.class)) {
-                    primaryField = field;
-                    break;
-                }
-            }
+            Field primaryField = getPrimaryKeyField(modelClass);
 
             if (primaryField == null) {
                 throw new IllegalArgumentException("Model is missing a primary field!");
             }
 
-            params[0] = getPrimaryKeyValue(model, modelClass);
+            params[0] = getPrimaryKeyValue(model);
 
             query = "delete from " + tableName + " where " + primaryField.getName() + " = ?";
         }
@@ -127,19 +122,13 @@ public class DeleteParser {
 
             filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
         } else {
-            Field _idField = null;
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(MongoOnly.class) && field.getName().equals("_id")) {
-                    _idField = field;
-                    break;
-                }
-            }
+            Field _idField = getPrimaryKeyField(modelClass);
 
             if (_idField == null) {
                 throw new IllegalArgumentException("Model is missing an _id field!");
             }
 
-            ObjectId idKeyValue = (ObjectId) _idField.get(model);
+            Object idKeyValue = getPrimaryKeyValue(model);
 
             if (idKeyValue == null) {
                 throw new IllegalArgumentException("Missing value for _id key!");
@@ -151,21 +140,11 @@ public class DeleteParser {
         return mongoDBQuery.setMongoData(collectionName).delete(filter).count();
     }
 
-    private static <T> Object getPrimaryKeyValue(T model, Class<?> modelClass) throws IllegalAccessException {
-        Field primaryField = null;
-        for (Field field : modelClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(PrimaryField.class)) {
-                primaryField = field;
-                break;
-            }
-        }
+    private Field getPrimaryKeyField(Class<?> modelClass) {
+        return fieldReflector.getPrimaryKeyField(modelClass);
+    }
 
-        if (primaryField == null) {
-            throw new IllegalArgumentException("Model is missing a primary field!");
-        }
-
-        // Get primary key value
-        primaryField.setAccessible(true);
-        return primaryField.get(model);
+    private <T> Object getPrimaryKeyValue(T model) throws IllegalAccessException {
+        return fieldReflector.getPrimaryKeyValue(model);
     }
 }

@@ -1,7 +1,5 @@
 package dbConnect.execution;
 
-import dbConnect.models.autogen.PrimaryField;
-import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.enums.CascadeType;
 import dbConnect.models.enums.FetchMethod;
 import dbConnect.models.relationship.ForeignKey;
@@ -21,12 +19,14 @@ public class RelationParser {
     private final MongoDBQuery mongoDBQuery;
     private final RetrieveParser retrieveParser;
     private final InsertParser insertParser;
+    private final FieldReflector fieldReflector;
 
     public RelationParser(SqlDBQuery sqlDBQuery) {
         this.sqlDBQuery = sqlDBQuery;
         this.mongoDBQuery = null;
         this.retrieveParser = new RetrieveParser(sqlDBQuery);
         this.insertParser = new InsertParser(sqlDBQuery);
+        this.fieldReflector = new FieldReflector(sqlDBQuery);
     }
 
     public RelationParser(MongoDBQuery mongoDBQuery) {
@@ -34,6 +34,7 @@ public class RelationParser {
         this.sqlDBQuery = null;
         this.retrieveParser = new RetrieveParser(mongoDBQuery);
         this.insertParser = new InsertParser(mongoDBQuery);
+        this.fieldReflector = new FieldReflector(mongoDBQuery);
     }
 
     public <T> void loadRelationships(T model, FetchMethod fetchMethod) throws IllegalAccessException,SQLException {
@@ -217,45 +218,11 @@ public class RelationParser {
     }
 
     private Object getPrimaryKeyValue(Object model) throws IllegalAccessException {
-        Class<?> modelClass = model.getClass();
-
-        // Technically, sqlDBQuery and monoDBQuery is mutually exclusive.
-        // However, for the sake of clarity, use else if here, it is only a pair anyway.
-        if (sqlDBQuery != null) {
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(PrimaryField.class)) {
-                    field.setAccessible(true);
-                    return field.get(model);
-                }
-            }
-        } else if (mongoDBQuery != null) {
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(MongoOnly.class) && "_id".equals(field.getName())) {
-                    field.setAccessible(true);
-                    return field.get(model);
-                }
-            }
-        }
-
-        return null;
+        return fieldReflector.getPrimaryKeyValue(model);
     }
 
     private String getPrimaryKeyField(Class<?> modelClass) {
-        if (sqlDBQuery != null) {
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(PrimaryField.class) && !field.isAnnotationPresent(MongoOnly.class)) {
-                    return field.getName();
-                }
-            }
-        } else if (mongoDBQuery != null) {
-            for (Field field : modelClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(MongoOnly.class) && "_id".equals(field.getName())) {
-                    return field.getName();
-                }
-            }
-        }
-
-        throw new IllegalArgumentException("'" + modelClass.getName() + "' Has no primary key field or mongo _id field");
+        return fieldReflector.getPrimaryKeyName(modelClass);
     }
 
     private Object getForeignKeyVal(Object model, String fieldName) throws IllegalAccessException {

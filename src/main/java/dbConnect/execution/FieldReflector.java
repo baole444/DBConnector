@@ -1,6 +1,8 @@
 package dbConnect.execution;
 
+import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.constrain.MaxLength;
+import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.json.JsonField;
 import dbConnect.models.json.JsonUtility;
 import dbConnect.models.notnull.NotNullField;
@@ -53,6 +55,51 @@ class FieldReflector {
         return fieldValue;
     }
 
+    <T> Object getPrimaryKeyValue(T model) throws IllegalAccessException {
+        Field field = getPrimaryKeyField(model.getClass());
+
+        if (field != null) {
+            field.setAccessible(true);
+            return field.get(model);
+        }
+
+        throw new IllegalStateException("No Primary key found in '" + model.getClass().getName() + "'");
+    }
+
+    String getPrimaryKeyName(Class<?> modelClass) {
+        Field field = getPrimaryKeyField(modelClass);
+
+        if (field != null) return field.getName();
+
+        throw new IllegalStateException("No Primary key found in '" + modelClass.getName() + "'");
+    }
+
+    Field getPrimaryKeyField(Class<?> modelClass) {
+        if (sqlDBQuery != null && mongoDBQuery == null) {
+            return getSQLPrimaryKeyField(modelClass);
+        }
+
+        if (sqlDBQuery == null && mongoDBQuery != null) {
+            return getMongoPrimaryKeyField(modelClass);
+        }
+
+        throw new IllegalStateException("No Primary key found in '" + modelClass.getName() + "'");
+    }
+
+    boolean isPrimaryKeyField(Field field) {
+        if (sqlDBQuery != null && mongoDBQuery == null) {
+            return isSQLPrimaryKeyField(field);
+        }
+
+        if (sqlDBQuery == null && mongoDBQuery != null) {
+            return isMongoPrimaryKeyField(field);
+        }
+
+        return false;
+    }
+
+
+
     private Object sqlJsonHandler(Field field, Object val) {
         JsonField jsonField = field.getAnnotation(JsonField.class);
         try {
@@ -88,5 +135,49 @@ class FieldReflector {
         }
 
         return fieldValue;
+    }
+
+    private Field getSQLPrimaryKeyField(Class<?> modelClass) {
+        for (Field f : modelClass.getDeclaredFields()) {
+            if (f.isAnnotationPresent(PrimaryField.class)) {
+                PrimaryField primaryField = f.getAnnotation(PrimaryField.class);
+                if (primaryField.forSQL()) return f;
+            }
+        }
+
+        throw new IllegalArgumentException("No SQL Primary key found in '" + modelClass.getName() + "'");
+    }
+
+    private Field getMongoPrimaryKeyField(Class<?> modelClass) {
+        for (Field f : modelClass.getDeclaredFields()) {
+            if (f.isAnnotationPresent(PrimaryField.class)) {
+                PrimaryField primaryField = f.getAnnotation(PrimaryField.class);
+                if (primaryField.forMongo()) return f;
+            }
+        }
+
+        for (Field f : modelClass.getDeclaredFields()) {
+            if (f.isAnnotationPresent(MongoOnly.class) && "_id".equals(f.getName())) return f;
+        }
+
+        throw new IllegalArgumentException("No Mongo Primary key found in '" + modelClass.getName() + "'");
+    }
+
+    boolean isSQLPrimaryKeyField(Field field) {
+        if (field.isAnnotationPresent(PrimaryField.class)) {
+            PrimaryField primaryField = field.getAnnotation(PrimaryField.class);
+            return primaryField.forSQL();
+        }
+
+        return false;
+    }
+
+    boolean isMongoPrimaryKeyField(Field field) {
+        if (field.isAnnotationPresent(PrimaryField.class)) {
+            PrimaryField primaryField = field.getAnnotation(PrimaryField.class);
+            return primaryField.forMongo();
+        }
+
+        return field.isAnnotationPresent(MongoOnly.class) && "_id".equals(field.getName());
     }
 }

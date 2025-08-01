@@ -92,7 +92,9 @@ public class InsertParser {
             field.setAccessible(true);
 
             // Ignore auto generated and mongoDB only fields
-            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class)) { continue; }
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class)) continue;
+
+            if (fieldReflector.isMongoPrimaryKeyField(field) && !fieldReflector.isSQLPrimaryKeyField(field)) continue;
 
             Object fieldValue = getFieldValue(model, field);
 
@@ -128,14 +130,13 @@ public class InsertParser {
         for (Field field : fields) {
             field.setAccessible(true);
 
-            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) { continue; }
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) continue;
+
+            if (fieldReflector.isSQLPrimaryKeyField(field) && !fieldReflector.isMongoPrimaryKeyField(field)) continue;
 
             Object fieldValue = getFieldValue(model, field);
-            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
-                fieldValue = Document.parse((String) JsonUtility.toJson(fieldValue));
-            }
 
-            document.append(field.getName(),fieldValue);
+            if (fieldValue != null) document.append(field.getName(),fieldValue);
         }
 
         return mongoDBQuery.setMongoData(collectionName).insert(document).count();
