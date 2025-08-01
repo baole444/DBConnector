@@ -1,6 +1,7 @@
 package dbConnect;
 
 
+import dbConnect.mapper.AutomaticMapper;
 import dbConnect.mapper.DocumentInterface;
 import dbConnect.mapper.ResultSetInterface;
 import dbConnect.models.enums.Collection;
@@ -96,12 +97,18 @@ public abstract class DataModel<T> {
      * This one is for SQL {@link java.sql.ResultSet}.
      * @return The SQL mapper method of this class.
      */
-    public abstract ResultSetInterface<T> getTableMap();
+    @SuppressWarnings("unchecked")
+    public ResultSetInterface<T> getTableMap() {
+        return AutomaticMapper.getSQLMapper((Class<T>) this.getClass());
+    }
 
     /**
      * A method uses to return the Data model mapper method.
      * This one is for NoSQL {@link org.bson.Document}.
      * @return The NoSQL mapper method of this class.
      */
-    public abstract DocumentInterface<T> getCollectionMap();
+    @SuppressWarnings("unchecked")
+    public DocumentInterface<T> getCollectionMap() {
+        return AutomaticMapper.getMongoMapper((Class<T>) this.getClass());
+    }
 }
