@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks a field as a point to
+ * This annotation marks a field as a point to
  * store reference of the desired relationship.<br>
  * The field should be of the target model's type.
  * <p>

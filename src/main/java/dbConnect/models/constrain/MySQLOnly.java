@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface limits an attribute to only be available in MySQL scope.<br>
+ * This annotation limits an attribute to only be available in MySQL scope.<br>
  * Example usage:
  * <pre><code>
  * {@literal @}MySQLOnly

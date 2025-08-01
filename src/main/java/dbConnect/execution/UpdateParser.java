@@ -25,6 +25,7 @@ import java.util.List;
 public class UpdateParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;
+    private final FieldReflector fieldReflector;
 
     /**
      * Constructor of {@link UpdateParser}.
@@ -34,6 +35,7 @@ public class UpdateParser {
     public UpdateParser(SqlDBQuery sqlDBQuery) {
         this.sqlDBQuery = sqlDBQuery;
         this.mongoDBQuery = null;
+        this.fieldReflector = new FieldReflector(sqlDBQuery);
     }
 
     /**
@@ -44,6 +46,7 @@ public class UpdateParser {
     public UpdateParser(MongoDBQuery mongoDBQuery) {
         this.mongoDBQuery = mongoDBQuery;
         this.sqlDBQuery = null;
+        this.fieldReflector = new FieldReflector(mongoDBQuery);
     }
 
     /**
@@ -111,10 +114,6 @@ public class UpdateParser {
             if (field.isAnnotationPresent(MongoOnly.class)) continue;
 
             Object fieldValue = getFieldValue(model, field);
-
-            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
-                fieldValue = JsonUtility.toJson(fieldValue);
-            }
 
             if (fieldValue != null) {
                 setTerm.append(field.getName()).append(" = ?, ");
@@ -195,9 +194,6 @@ public class UpdateParser {
             if (field.isAnnotationPresent(MySQLOnly.class) || field.isAnnotationPresent(PrimaryField.class)) continue;
 
             Object fieldValue = getFieldValue(model, field);
-            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
-                fieldValue = Document.parse((String) JsonUtility.toJson(fieldValue));
-            }
 
             if (fieldValue != null) {
                 updateFields.append(field.getName(), fieldValue);
@@ -227,25 +223,7 @@ public class UpdateParser {
      * @param <T> type of the data model.
      * @throws IllegalAccessException when failed to extract field's details.
      */
-    private static <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
-        Object fieldValue = field.get(model);
-
-        if (field.isAnnotationPresent(NotNullField.class) && fieldValue == null) {
-            throw new IllegalArgumentException("Missing value for field: " + field.getName() + " with not null annotation");
-        }
-
-        if (field.isAnnotationPresent(MaxLength.class)) {
-            if (fieldValue instanceof String) {
-                int maxLength = field.getAnnotation(MaxLength.class).value();
-
-                if (((String) fieldValue).length() > maxLength) {
-                    fieldValue = ((String) fieldValue).substring(0, maxLength);
-                }
-
-            } else {
-                throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
-            }
-        }
-        return fieldValue;
+    private <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
+        return fieldReflector.getFieldValue(model, field);
     }
 }

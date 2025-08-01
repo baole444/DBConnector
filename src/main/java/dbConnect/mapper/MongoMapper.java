@@ -2,6 +2,8 @@ package dbConnect.mapper;
 
 import com.mongodb.MongoException;
 import dbConnect.models.constrain.MySQLOnly;
+import dbConnect.models.json.JsonField;
+import dbConnect.models.json.JsonUtility;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -85,6 +87,40 @@ public class MongoMapper<T> implements DocumentInterface<T> {
         Object val = document.get(fieldName);
 
         if (val == null) return null;
+
+        if (field.isAnnotationPresent(JsonField.class)) {
+            JsonField jsonField = field.getAnnotation(JsonField.class);
+
+            //  force flatten string
+            if (jsonField.storeAsString() && val instanceof String s) {
+                try {
+                    return JsonUtility.fromJson(s, type);
+                } catch (Exception e) {
+                    System.err.println("Failed to deserialize JSON field '" + fieldName + "' in '"
+                            + field.getDeclaringClass().getName() +"': " + e.getMessage()
+                    );
+
+                    return null;
+                }
+            }
+
+            // native
+            if (type.isAssignableFrom(val.getClass())) {
+                return val;
+            }
+
+            // native object conversion attempt
+            try {
+                String s = JsonUtility.toJson(val);
+                return JsonUtility.fromJson(s, type);
+            } catch (Exception e) {
+                System.err.println("Failed to convert MongoDB field '" + fieldName + "' in '"
+                        + field.getDeclaringClass().getName() +"': " + e.getMessage()
+                );
+
+                return null;
+            }
+        }
 
         if (type == String.class) return val.toString();
 

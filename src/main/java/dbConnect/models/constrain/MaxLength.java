@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks an attribute's maximum length to user defined value or defaults to {@code 255}.<br>
+ * This annotation marks an attribute's maximum length to user defined value or defaults to {@code 255}.<br>
  * {@link dbConnect.execution.InsertParser} and {@link dbConnect.execution.UpdateParser} will enforce all fields value with this notation to be limited by the defined value.<br>
  * If an attribute already has {@link dbConnect.models.autogen.AutomaticField} annotation, it will take priority over this annotation.<br>
  * Example usage:

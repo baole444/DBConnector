@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks a field to have one-to-one relationship
+ * This annotation marks a field to have one-to-one relationship
  * with another model.<br>
  * <p>
  * <b>Usage example:</b><br>

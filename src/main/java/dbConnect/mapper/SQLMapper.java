@@ -93,9 +93,19 @@ public class SQLMapper<T> implements ResultSetInterface<T> {
 
         if (field.isAnnotationPresent(JsonField.class)) {
             String jsonString = resultSet.getString(fieldName);
-            if (jsonString != null && !jsonString.isEmpty()) {
-                return JsonUtility.fromJson(jsonString, type);
+            if (jsonString != null && !jsonString.trim().isEmpty()) {
+                try {
+                    return JsonUtility.fromJson(jsonString, type);
+                } catch (Exception e) {
+                    System.err.println("Failed to deserialize JSON field '" + fieldName + "' in '"
+                            + field.getDeclaringClass().getName() +"': " + e.getMessage()
+                    );
+
+                    return null;
+                }
             }
+
+            return null;
         }
 
         Object val = resultSet.getObject(fieldName);

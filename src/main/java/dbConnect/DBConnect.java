@@ -192,6 +192,7 @@ public class DBConnect {
         return retrieve(modelClass, null);
     }
 
+    // TODO: document these later
     public static <T> List<T> retrieveAllRelationships(Class<T> modelClass) {
         return retrieveRelationships(modelClass, null);
     }

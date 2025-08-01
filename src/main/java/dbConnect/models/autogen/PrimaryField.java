@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks an attribute to be the primary key of a model.<br>
+ * This annotation marks an attribute to be the primary key of a model.<br>
  * <i><strong>There should only be one field borne primary notation existed at the same time in a model.</strong></i><br>
  * Example usage:
  * <pre><code>

@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.*;
 
+// TODO: document this later
 public class RelationParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;

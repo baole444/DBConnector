@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks a field to have one-to-many relationship
+ * This annotation marks a field to have one-to-many relationship
  * with another model.<br>
  * The field should be a {@code Collection} (List, Set, etc.) of the target model's type.
  * <p>
