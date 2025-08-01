@@ -1,6 +1,8 @@
 package dbConnect.mapper;
 
 import dbConnect.models.constrain.MongoOnly;
+import dbConnect.models.json.JsonField;
+import dbConnect.models.json.JsonUtility;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -89,7 +91,15 @@ public class SQLMapper<T> implements ResultSetInterface<T> {
     private Object getValue(ResultSet resultSet, Field field, String fieldName) throws SQLException {
         Class<?> type = field.getType();
 
+        if (field.isAnnotationPresent(JsonField.class)) {
+            String jsonString = resultSet.getString(fieldName);
+            if (jsonString != null && !jsonString.isEmpty()) {
+                return JsonUtility.fromJson(jsonString, type);
+            }
+        }
+
         Object val = resultSet.getObject(fieldName);
+
         if (val == null) return null;
 
         if (type == String.class) return resultSet.getString(fieldName);

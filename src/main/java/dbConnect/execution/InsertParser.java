@@ -3,6 +3,8 @@ package dbConnect.execution;
 import dbConnect.DataModel;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
+import dbConnect.models.json.JsonField;
+import dbConnect.models.json.JsonUtility;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.AutomaticField;
@@ -92,6 +94,9 @@ public class InsertParser {
             if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class)) { continue; }
 
             Object fieldValue = getFieldValue(model, field);
+            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
+                fieldValue = JsonUtility.toJson(fieldValue);
+            }
 
             columns.append(field.getName()).append(", ");
             placeholders.append("?, ");
@@ -128,6 +133,10 @@ public class InsertParser {
             if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) { continue; }
 
             Object fieldValue = getFieldValue(model, field);
+            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
+                fieldValue = Document.parse((String) JsonUtility.toJson(fieldValue));
+            }
+
             document.append(field.getName(),fieldValue);
         }
 

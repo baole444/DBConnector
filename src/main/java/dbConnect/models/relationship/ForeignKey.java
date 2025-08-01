@@ -5,6 +5,27 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * This interface marks a field as a point to
+ * store reference of the desired relationship.<br>
+ * The field should be of the target model's type.
+ * <p>
+ * <b>Usage example:</b><br>
+ * <pre>
+ * {@code
+ * @TableName("order")
+ * public class Order extends DataModel<Order> {
+ *      // Others attributes
+ *
+ *      // The related model Customer in Order model,
+ *      // where customer_id is the foreign key.
+ *      @ForeignKey(column = "customer_id")
+ *      private Customer customer;
+ * }
+ * }
+ * </pre>
+ * @since 2.5
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface ForeignKey {

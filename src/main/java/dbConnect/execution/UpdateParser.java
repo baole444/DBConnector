@@ -4,6 +4,8 @@ import dbConnect.DataModel;
 import dbConnect.Utility;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
+import dbConnect.models.json.JsonField;
+import dbConnect.models.json.JsonUtility;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
@@ -110,6 +112,10 @@ public class UpdateParser {
 
             Object fieldValue = getFieldValue(model, field);
 
+            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
+                fieldValue = JsonUtility.toJson(fieldValue);
+            }
+
             if (fieldValue != null) {
                 setTerm.append(field.getName()).append(" = ?, ");
                 val.add(fieldValue);
@@ -189,6 +195,10 @@ public class UpdateParser {
             if (field.isAnnotationPresent(MySQLOnly.class) || field.isAnnotationPresent(PrimaryField.class)) continue;
 
             Object fieldValue = getFieldValue(model, field);
+            if (fieldValue != null && field.isAnnotationPresent(JsonField.class)) {
+                fieldValue = Document.parse((String) JsonUtility.toJson(fieldValue));
+            }
+
             if (fieldValue != null) {
                 updateFields.append(field.getName(), fieldValue);
             }

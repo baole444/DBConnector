@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  * }
  * }
  * </pre>
- * @since 2.2
+ * @since 2.5
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
