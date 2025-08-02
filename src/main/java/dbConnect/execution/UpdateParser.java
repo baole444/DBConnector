@@ -13,6 +13,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +105,7 @@ public class UpdateParser {
 
             if (fieldReflector.isPrimaryKeyField(field)) continue;
 
-            if (field.isAnnotationPresent(MongoOnly.class)) continue;
+            if (field.isAnnotationPresent(MongoOnly.class) || field.isAnnotationPresent(AutomaticField.class) || Modifier.isTransient(field.getModifiers())) continue;
 
             if (fieldReflector.isMongoPrimaryKeyField(field) && !fieldReflector.isSQLPrimaryKeyField(field)) continue;
 
@@ -188,7 +189,7 @@ public class UpdateParser {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) continue;
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class) || Modifier.isTransient(field.getModifiers())) continue;
 
             if (field.getName().equals(_idField.getName())) continue;
 

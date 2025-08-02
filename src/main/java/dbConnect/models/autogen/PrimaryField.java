@@ -16,7 +16,6 @@ import java.lang.annotation.Target;
  *      String CustomerID;
  * }
  * </pre>
- * </p>
  * @since 2.5
  * <p>
  * <b>New feature:</b>

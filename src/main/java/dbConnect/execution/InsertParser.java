@@ -11,6 +11,7 @@ import dbConnect.models.autogen.AutomaticField;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,7 +93,7 @@ public class InsertParser {
             field.setAccessible(true);
 
             // Ignore auto generated and mongoDB only fields
-            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class)) continue;
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MongoOnly.class) || Modifier.isTransient(field.getModifiers())) continue;
 
             if (fieldReflector.isMongoPrimaryKeyField(field) && !fieldReflector.isSQLPrimaryKeyField(field)) continue;
 
@@ -130,7 +131,7 @@ public class InsertParser {
         for (Field field : fields) {
             field.setAccessible(true);
 
-            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class)) continue;
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class) || Modifier.isTransient(field.getModifiers())) continue;
 
             if (fieldReflector.isSQLPrimaryKeyField(field) && !fieldReflector.isMongoPrimaryKeyField(field)) continue;
 
