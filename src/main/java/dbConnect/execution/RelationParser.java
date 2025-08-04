@@ -13,7 +13,9 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.*;
 
-// TODO: document this later
+/**
+ * Handle relationship related query using reflection.
+ */
 public class RelationParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;
@@ -21,6 +23,11 @@ public class RelationParser {
     private final InsertParser insertParser;
     private final FieldReflector fieldReflector;
 
+    /**
+     * Constructor of {@link RelationParser}.
+     * For noSQL query, see {@link RelationParser#RelationParser(MongoDBQuery)}
+     * @param sqlDBQuery an instance of {@link SqlDBQuery#SqlDBQuery(String, String, String)}
+     */
     public RelationParser(SqlDBQuery sqlDBQuery) {
         this.sqlDBQuery = sqlDBQuery;
         this.mongoDBQuery = null;
@@ -29,6 +36,11 @@ public class RelationParser {
         this.fieldReflector = new FieldReflector(sqlDBQuery);
     }
 
+    /**
+     * Constructor of {@link RelationParser}.
+     * For SQL query, see {@link RelationParser#RelationParser(SqlDBQuery)}
+     * @param mongoDBQuery an instance of {@link MongoDBQuery#MongoDBQuery(String, String)}
+     */
     public RelationParser(MongoDBQuery mongoDBQuery) {
         this.mongoDBQuery = mongoDBQuery;
         this.sqlDBQuery = null;
@@ -37,6 +49,14 @@ public class RelationParser {
         this.fieldReflector = new FieldReflector(mongoDBQuery);
     }
 
+    /**
+     * Load all relationships of a model based on fetch type.
+     * @param model an instance of a data model.
+     * @param fetchMethod the type of fetch strategy to use.
+     * @param <T> type of the data model.
+     * @throws IllegalAccessException if failed to access a field.
+     * @throws SQLException if SQL operation failed.
+     */
     public <T> void loadRelationships(T model, FetchMethod fetchMethod) throws IllegalAccessException,SQLException {
         if (model == null) return;
 
@@ -77,6 +97,14 @@ public class RelationParser {
         }
     }
 
+    /**
+     * Save data of a model and its related models.
+     * @param model an instance of a data model.
+     * @return true, if successfully saved.
+     * @param <T> type of the data model.
+     * @throws SQLException if SQL operation failed.
+     * @throws IllegalAccessException if failed to access a field.
+     */
     public <T> boolean saveRelationships(T model) throws SQLException, IllegalAccessException {
         if (model == null) return false;
 
@@ -85,6 +113,17 @@ public class RelationParser {
         return insertParser.insert(model) > 0;
     }
 
+    /**
+     * Find and load related Data Model instances into designated Data Model's relationship field.
+     * @param model the designated data model.
+     * @param foreignKeyName the targeted relationship field.
+     * @return List of related model instances.
+     * @param <T> type of the designated data model.
+     * @param <R> type of the related data model.
+     * @throws NoSuchFieldException if the relationship field in the designated data model doesn't exist.
+     * @throws SQLException if SQL operation failed.
+     * @throws IllegalAccessException if the targeted field is not a relationship field.
+     */
     @SuppressWarnings("unchecked")
     public <T, R> List<R> getRelatedRelation(T model, String foreignKeyName) throws NoSuchFieldException, SQLException, IllegalAccessException {
         if (model == null) {

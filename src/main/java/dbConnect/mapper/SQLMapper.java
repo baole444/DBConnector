@@ -14,11 +14,22 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handle mapping of a data model to {@link ResultSet} automatically using reflection.<br>
+ * Fields in the model with {@code transient} will be skipped by this mapper.
+ *
+ * @param <T> type of the data model.
+ * @since 2.5
+ */
 public class SQLMapper<T> implements ResultSetInterface<T> {
     private final Class<T> modelClass;
     private final Constructor<T> constructor;
     private final Map<String, Field> fields;
 
+    /**
+     * Constructor of {@link SQLMapper}.
+     * @param modelClass the class of the data model to map to.
+     */
     public SQLMapper(Class<T> modelClass) {
         this.modelClass = modelClass;
         this.fields = new HashMap<>();
@@ -33,6 +44,14 @@ public class SQLMapper<T> implements ResultSetInterface<T> {
         initFields();
     }
 
+    /**
+     * Map the query result to an instance of a data model automatically.<br>
+     * Fields in the model with {@code transient} will be skipped.
+     *
+     * @param resultSet instance of a ResultSet.
+     * @return instance of a Data Model with its attributes from the query result.
+     * @throws SQLException when error occurred during mapping between MySQL query result and the DataModel.
+     */
     @Override
     public T map(ResultSet resultSet) throws SQLException {
         try {
@@ -59,6 +78,10 @@ public class SQLMapper<T> implements ResultSetInterface<T> {
         }
     }
 
+    /**
+     * Get the data model class that this mapper is for.
+     * @return the data model class.
+     */
     public Class<T> getModelClass() {
         return modelClass;
     }

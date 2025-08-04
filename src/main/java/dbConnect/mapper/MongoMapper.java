@@ -18,11 +18,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handle mapping of a data model to {@link Document} automatically using reflection.<br>
+ * Fields in the model with {@code transient} will be skipped by this mapper.
+ *
+ * @param <T> type of the data model.
+ * @since 2.5
+ */
 public class MongoMapper<T> implements DocumentInterface<T> {
     private final Class<T> modelClass;
     private final Map<String, Field> fields;
     private final Constructor<T> constructor;
 
+    /**
+     * Constructor of {@link MongoMapper}.
+     * @param modelClass the class of the data model to map to.
+     */
     public MongoMapper(Class<T> modelClass) {
         this.modelClass = modelClass;
         this.fields = new HashMap<>();
@@ -37,6 +48,14 @@ public class MongoMapper<T> implements DocumentInterface<T> {
         initFields();
     }
 
+    /**
+     * Map the query result to an instance of a data model.<br>
+     * Fields in the model with {@code transient} will be skipped.
+     *
+     * @param document instance of a Document.
+     * @return instance of a Data Model with its attributes from the query result.
+     * @throws MongoException when error occurred during mapping between MongoDB query result and the DataModel.
+     */
     @Override
     public T map(Document document) throws MongoException {
         try {
@@ -62,6 +81,10 @@ public class MongoMapper<T> implements DocumentInterface<T> {
         }
     }
 
+    /**
+     * Get the data model class that this mapper is for.
+     * @return the data model class.
+     */
     public Class<T> getModelClass() {
         return modelClass;
     }

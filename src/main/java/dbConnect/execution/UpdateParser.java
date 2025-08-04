@@ -10,7 +10,6 @@ import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

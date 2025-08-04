@@ -1,10 +1,13 @@
 # General Database Connector
 An abstraction for JDBC and MongoDB data query tasks.
 
+<i>This document is for `v2.5`</i>
+
 ## Feature:
 - Parsing query statements base on data model.
 - Insert, Update, Delete, Retrieve data with ease.
-- MongoDB support.
+- Relationship query supported.
+- MongoDB and MySQL supported.
 
 ## Installation:
 This project uses Gradle (version 8.13) for importation of dependencies and build tasks, 

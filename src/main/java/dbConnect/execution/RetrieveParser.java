@@ -76,11 +76,12 @@ public class RetrieveParser {
      * </p>
      * @param params values of {@code whereTerm} store in corresponding order.
      * @return a List of instances specified by the data model class that met the {@code whereTerm} conditions.
-     * @param <T> a data model class extending {@link dbConnect.DataModel}
+     * @param <T> a data model class extending {@link dbConnect.DataModel}.
      * @throws IllegalAccessException when {@link DataModel#getTableMap()} method from the data model
      * or accessing the method outside SQL scope.
      * @throws SQLException when there is an error occurred during data selection.
      */
+    @SuppressWarnings("unchecked")
     private <T> List<T> retrieveSQL(Class<T> modelClass, String whereTerm, Object... params) throws IllegalAccessException, SQLException {
         if (sqlDBQuery == null) throw new IllegalAccessException("Calling an SQL method without an SQL scope!");
 
@@ -131,6 +132,7 @@ public class RetrieveParser {
      * @throws IllegalAccessException when missing {@link DataModel#getCollectionMap()} method from the data model
      * or accessing the method outside NoSQL scope.
      */
+    @SuppressWarnings("unchecked")
     private <T> List<T> retrieveMongo(Class<T> modelClass, String condition, Object... params) throws IllegalAccessException {
         if (mongoDBQuery == null) throw new IllegalAccessException("Calling a MongoDB method without a MongoDB scope!");
 
