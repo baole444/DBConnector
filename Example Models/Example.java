@@ -1,4 +1,4 @@
-package dbConnect.models;
+package example.model;
 
 import com.mongodb.MongoException;
 import dbConnect.DataModel;
@@ -20,10 +20,10 @@ import java.sql.SQLException;
 @TableName("Example")
 @CollectionName("Example")
 public class Example extends DataModel<Example> {
-    @AutomaticField @PrimaryField @MaxLength(36) @MySQLOnly
+    @AutomaticField @PrimaryField(forMongo = false) @MaxLength(36) @MySQLOnly
     private String uuid;
 
-    @AutomaticField @MongoOnly
+    @AutomaticField @MongoOnly @PrimaryField(forSQL = false)
     private ObjectId _id;
 
     @NotNullField @MaxLength(100)
@@ -82,7 +82,8 @@ public class Example extends DataModel<Example> {
         this.balance = balance;
     }
 
-
+    // LEGACY reference, since 2.5, there is no need to manually write these
+    /*
     public static class ExampleSQLMapper implements ResultSetInterface<Example> {
         @Override
         public Example map(ResultSet resultSet) throws SQLException {
@@ -113,4 +114,5 @@ public class Example extends DataModel<Example> {
     public DocumentInterface<Example> getCollectionMap() {
         return new ExampleMongoMapper();
     }
+     */
 }

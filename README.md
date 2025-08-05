@@ -84,28 +84,39 @@ public class Example extends DataModel<Example> {
 #### Annotation for an attribute:
 Currently, the system supports these following annotation:
 - `@AutomaticField` for field managed by the database.
-- `@PrimaryField` for (SQL) primary key field.
+- `@PrimaryField` for primary field or unique identifier in the database.
 - `@MaxLength` for limit a field's string length. The default value for it is 255.
 - `@MongoOnly` for limit field access to MongoDB only.
 - `@MySQLOnly` for limit field access to MySQL only
-- `@NotNullField` for field that can’t be null.
+- `@NotNullField` for field that cannot be null.
+- `@JsonField` for field of a serializable type that is stored as JSON string or nested document in database.
+
+Additionally, the system also supports relationship annotation:
+- `@ForeignKey` for field that hold the instance(s) of the related data model where the foreign key point to.
+- `@OneToOne` for field of a `Target` type that hold one-to-one relationship.
+- `@OneToMany` for field of a `Collection<Target>` type that hold one-to-many relationship.
+- `@ManyToOne` for field of a `Target` that hold many-to-many relationship.
 
 Examples:
 ```java
-import dbConnect.models.*;
-import org.bson.types.ObjectId;
-
-@AutomaticField @PrimaryField @MaxLength(36)
+@AutomaticField @PrimaryField(forMongo = false) @MaxLength(36)
 private String id;
 
-@MongoOnly @AutomaticField
+@AutomaticField @MongoOnly @PrimaryField(forSQL = false)
 private ObjectId _id;
+
+// this unique identifier is the same on both database
+@PrimaryField
+private String uniqueId;
 
 @MaxLength // Not specified length will default to 255.
 private String text;
 
-@NotNullField @MaxLength(36) @MySQLOnly
-private String foreign_key;
+@NotNullField @MySQLOnly
+private String fullName;
+
+@JsonField(ignoreNulls = true)
+private List<CustomModel> model;
 ```
 
 > [!NOTE]   
@@ -131,134 +142,43 @@ public class Example extends DataModel<Example> {
 }
 ```
 - Necessary getter and setter methods for your convenience.
-- Result mapping to generate new instance of data model during data retrieval.
-- if you extend the built in `DataModel<T>` for your class it will ensure retrieval  method and return mapper methods.
+- Optionally, Result mapping override to generate new instance of data model during data retrieval.
+- if you extend the built in `DataModel<T>` for your class it will ensure retrieval method and return mapper methods.
 
 > [!NOTE]
-> Some MongoDB method's fall back logic rely on `@MongoOnly` field with name "_id" to perform ObjectId base execution.
-> Missing this field could cause some unexpected behaviour.
-> This will be changed in a later version of the package.
+> Since `version 2.5`, `DataModel` will automatically map your custom model using `AutomaticMapper`.<br>
+> Unless you need to customize your mapping (custom name or special ignore case), there is no need to override
+> the automatic mapper.
 
-Here is the implement of the [Example data model](https://github.com/baole444/DBConnector/blob/main/Example%20Models/Example.java)
+Here is the implement of the [Example data models](https://github.com/baole444/DBConnector/blob/main/Example%20Models/)
 that supports both mySQL and mongoDB:
 <details>
     <summary><b>Example.class</b></summary>
 
 ```java
-package your_package;
-
-import com.mongodb.MongoException;
-import dbConnect.DataModel;
-import dbConnect.mapper.DocumentInterface;
-import dbConnect.mapper.ResultSetInterface;
-import dbConnect.models.autogen.AutomaticField;
-import dbConnect.models.autogen.PrimaryField;
-import dbConnect.models.constrain.MaxLength;
-import dbConnect.models.constrain.MongoOnly;
-import dbConnect.models.constrain.MySQLOnly;
-import dbConnect.models.notnull.NotNullField;
-import dbConnect.models.meta.TableName;
-import dbConnect.models.meta.CollectionName;
-import org.bson.Document;
-import org.bson.types.ObjectId;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 @TableName("Example")
 @CollectionName("Example")
 public class Example extends DataModel<Example> {
     @AutomaticField @PrimaryField @MaxLength(36) @MySQLOnly
     private String uuid;
 
-    @AutomaticField @MongoOnly
-    private ObjectId _id; // Crucial for MongoDB method fallback.
-
     @NotNullField @MaxLength(100)
     private String user_name;
 
     private float balance;
 
+    @JsonField
+    private HashMap<String, Object> examplesDetails;
+    
+    @ForeignKey(column = "detail_id", referencedColumnName = "id", nullable = false)
+    private ExampleDetail detail;
+    
+    @OneToMany(targetModel = OtherExampleModel.class, mappedBy = "other_example_id", fetch = FetchMethod.EAGER, cascade = {CascadeType.PERSIST ,CascadeType.REMOVE})
+    private List<OtherExampleModel> otherExamples;
+    
     public Example() {}// Must have
-
-    public Example(String uuid, String user_name, float balance) {
-        this.uuid = uuid;
-        this.user_name = user_name;
-        this.balance = balance;
-    }
-
-    public Example(ObjectId _id, String user_name, float balance) {
-        this._id = _id;
-        this.user_name = user_name;
-        this.balance = balance;
-    }
-
-    public Example(String user_name, float balance) {
-        this.user_name = user_name;
-        this.balance = balance;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public ObjectId get_id() {
-        return _id;
-    }
-
-    public void set_id(ObjectId _id) {
-        this._id = _id;
-    }
-
-    public String getUser_name() {
-        return user_name;
-    }
-
-    public void setUser_name(String user_name) {
-        this.user_name = user_name;
-    }
-
-    public float getBalance() {
-        return balance;
-    }
-
-    public void setBalance(float balance) {
-        this.balance = balance;
-    }
     
-    public static class ExampleSQLMapper implements ResultSetInterface<Example> {
-        @Override
-        public Example map(ResultSet resultSet) throws SQLException {
-            String id = resultSet.getString("uuid");
-            String userName = resultSet.getString("user_name");
-            float balance = resultSet.getFloat("balance");
-            return new Example(id, userName, balance);
-        }
-    }
-
-    public static class ExampleMongoMapper implements DocumentInterface<Example> {
-        @Override
-        public Example map(Document document) throws MongoException {
-            ObjectId id = document.getObjectId("_id");
-            String userName = document.getString("user_name");
-            float balance = document.getDouble("balance").floatValue();
-            return new Example(id, userName, balance);
-        }
-    }
-    
-    @Override
-    public ResultSetInterface<Example> getTableMap() {
-        return new ExampleSQLMapper();
-    }
-    
-    @Override
-    public DocumentInterface<Example> getCollectionMap() {
-        return new ExampleMongoMapper();
-    }
+    // Other methods you might want to add.
 }
 ```
 </details>
@@ -411,4 +331,101 @@ If you call `DBConnect.delete(instance)`,
 the parser will default to `PrimaryField` or `MongoOnly` field of that instance of data model.
 If this is what you wanted,
 make sure to initiate the instance with at least primary key field not null or mongo only field not null.
+</details>
+
+Parsing with relationship:
+
+For example, we have Customer, Order and CustomerProfile models with relationship keys as follows:
+```java
+public class Customer extends DataModel<Customer> {
+    @OneToOne(targetModel = CustomerProfile.class, fetch = FetchMethod.EAGER)
+    @ForeignKey(column = "profile_id")
+    private CustomerProfile profile;
+    
+    @OneToMany(targetModel = Order.class, mappedBy = "customer_id", fetch = FetchMethod.LAZY)
+    private List<Order> orders;
+}
+```
+```java
+public class Order extends DataModel<Order> {
+    @ManyToOne(targetModel = Customer.class, fetch = FetchMethod.LAZY)
+    @ForeignKey(column = "customer_id", referencedColumnName = "customer_id")
+    private Customer customer;
+}
+```
+
+<details>
+    <summary>Retrieve with relationship</summary>
+
+```java
+public void getOrders() {
+    // Get customers with relationships
+    List<Customer> customers = DBConnect.retrieveAllRelationships(Customer.class);
+
+    // Get a specific customer with relationships
+    String condition;
+    if (usingMongoDB) {
+        condition = "customer_name : ?";
+    } else {
+        condition = "customer_name = ?";
+    }
+    
+    List<Customer> customer = DBConnect.retrieveRelationships(Customer.class, condition, "John Doe");
+
+    // Access the loaded relationships
+    if (!customer.isEmpty()) {
+        Customer johnDoe = customer.get(0);
+        CustomerProfile profile = johnDoe.getProfile();
+
+        // load relationship passively
+        DBConnect.loadLazyRelationships(johnDoe);
+        List<Order> orders = johnDoe.getOrders();
+    } 
+}
+```
+</details>
+
+<details>
+    <summary>Retrieve related data</summary>
+
+```java
+public void getRelated() {
+    // Get orders belong to John Doe
+    Customer customer = retrieveCustomer("John Doe");
+    List<Order> customerOrders = DBConnect.retrieveRelated(customer, "orders");
+    
+    // Get customers belong to an order
+    Order order = retrieveOrder("some bill");
+    List<Customer> customers = DBConnect.retrieveRelated(order, "customer");
+}
+```
+</details>
+
+<details>
+    <summary>Insert with relationship</summary>
+
+```java
+public void insertInformation() {
+    // Customer John Doe
+    Customer john = new Customer("John Doe", "john@example.com", "1234567890");
+
+    // Work as a developer
+    CustomerProfile profile = new CustomerProfile("Developer", new Date(), "M");
+
+    john.setProfile(profile);
+
+    List<Order> orders = new ArrayList<>();
+    
+    // Order 1 and 2 where customer_id, date and total is set
+    // As we are cascading this, we can skip the id
+    Order order1 = new Order(new Date(), 20.5);
+    Order order2 = new Order(new Date(), 100.0);
+    orders.add(order1);
+    orders.add(order2);
+    
+    john.setOrders(orders);
+    
+    boolean success = DBConnect.insertRelationships(john);
+}
+```
 </details>
