@@ -2,17 +2,17 @@ package dbConnect.execution;
 
 import dbConnect.DataModel;
 import dbConnect.Utility;
+import dbConnect.models.autogen.AutomaticField;
 import dbConnect.models.constrain.MongoOnly;
 import dbConnect.models.constrain.MySQLOnly;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
 import dbConnect.models.autogen.PrimaryField;
-import dbConnect.models.constrain.MaxLength;
 import dbConnect.models.notnull.NotNullField;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +23,7 @@ import java.util.List;
 public class UpdateParser {
     private final SqlDBQuery sqlDBQuery;
     private final MongoDBQuery mongoDBQuery;
+    private final FieldReflector fieldReflector;
 
     /**
      * Constructor of {@link UpdateParser}.
@@ -32,6 +33,7 @@ public class UpdateParser {
     public UpdateParser(SqlDBQuery sqlDBQuery) {
         this.sqlDBQuery = sqlDBQuery;
         this.mongoDBQuery = null;
+        this.fieldReflector = new FieldReflector(sqlDBQuery);
     }
 
     /**
@@ -42,6 +44,7 @@ public class UpdateParser {
     public UpdateParser(MongoDBQuery mongoDBQuery) {
         this.mongoDBQuery = mongoDBQuery;
         this.sqlDBQuery = null;
+        this.fieldReflector = new FieldReflector(mongoDBQuery);
     }
 
     /**
@@ -91,22 +94,19 @@ public class UpdateParser {
 
         List<Object> val = new ArrayList<>();
         StringBuilder setTerm = new StringBuilder();
-        Field primaryField = null;
-        Object primaryKeyValue = null;
+        Field primaryField = getPrimaryKeyField(modelClass);
+        Object primaryKeyValue = getPrimaryKeyValue(model);
 
         Field[] fields = modelClass.getDeclaredFields();
 
         for (Field field : fields) {
             field.setAccessible(true);
 
-            // Find primary field
-            if (field.isAnnotationPresent(PrimaryField.class)) {
-                primaryField = field;
-                primaryKeyValue = field.get(model);
-                continue;
-            }
+            if (fieldReflector.isPrimaryKeyField(field)) continue;
 
-            if (field.isAnnotationPresent(MongoOnly.class)) continue;
+            if (field.isAnnotationPresent(MongoOnly.class) || field.isAnnotationPresent(AutomaticField.class) || Modifier.isTransient(field.getModifiers())) continue;
+
+            if (fieldReflector.isMongoPrimaryKeyField(field) && !fieldReflector.isSQLPrimaryKeyField(field)) continue;
 
             Object fieldValue = getFieldValue(model, field);
 
@@ -137,7 +137,7 @@ public class UpdateParser {
             val.add(primaryKeyValue);
         }
 
-        return  sqlDBQuery.setDataSQL(query, val.toArray());
+        return sqlDBQuery.setDataSQL(query, val.toArray());
     }
 
     /**
@@ -170,25 +170,32 @@ public class UpdateParser {
             }
 
             filter = Document.parse(Utility.appendPlaceholderValue(condition, params, filterArgCount));
+        } else {
+            String primaryKeyName = getPrimaryKeyField(modelClass).getName();
+            Object primaryKeyVal = getPrimaryKeyValue(model);
+
+            if (primaryKeyVal == null) {
+                throw new IllegalAccessException("Missing value for primary key field: " + primaryKeyName);
+            }
+
+            filter.append(primaryKeyName, primaryKeyVal);
         }
 
         Document updateFields = new Document();
-        Field _idField = null;
-        ObjectId _idValue = null;
+        Field _idField = getPrimaryKeyField(modelClass);
         String collectionName = ((DataModel<?>) model).getCollectionName();
         Field[] fields = modelClass.getDeclaredFields();
 
         for (Field field : fields) {
             field.setAccessible(true);
-            if (field.isAnnotationPresent(MongoOnly.class) && field.getName().equals("_id")) {
-                _idField = field;
-                _idValue = (ObjectId) _idField.get(model);
-                continue;
-            }
+            if (field.isAnnotationPresent(AutomaticField.class) || field.isAnnotationPresent(MySQLOnly.class) || Modifier.isTransient(field.getModifiers())) continue;
 
-            if (field.isAnnotationPresent(MySQLOnly.class) || field.isAnnotationPresent(PrimaryField.class)) continue;
+            if (field.getName().equals(_idField.getName())) continue;
+
+            if (fieldReflector.isSQLPrimaryKeyField(field) && !fieldReflector.isMongoPrimaryKeyField(field)) continue;
 
             Object fieldValue = getFieldValue(model, field);
+
             if (fieldValue != null) {
                 updateFields.append(field.getName(), fieldValue);
             }
@@ -198,44 +205,18 @@ public class UpdateParser {
             throw new IllegalArgumentException("No target field for updating specified.");
         }
 
-        if (condition == null || condition.isBlank()) {
-            if (_idField == null || _idValue == null) {
-                throw new IllegalAccessException("Missing value for _id or the field itself!");
-            }
-
-            filter.append(_idField.getName(), _idValue);
-        }
-
         return mongoDBQuery.setMongoData(collectionName).update(filter, new Document("$set", updateFields)).count();
     }
 
-    /**
-     * Internal method to get the value of a field.
-     * @param model an instance of a Data Model.
-     * @param field an attribute extracted from a model.
-     * @return value of the field as an {@code object}.
-     * @param <T> type of the data model.
-     * @throws IllegalAccessException when failed to extract field's details.
-     */
-    private static <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
-        Object fieldValue = field.get(model);
+    private <T> Object getFieldValue(T model, Field field) throws IllegalAccessException {
+        return fieldReflector.getFieldValue(model, field);
+    }
 
-        if (field.isAnnotationPresent(NotNullField.class) && fieldValue == null) {
-            throw new IllegalArgumentException("Missing value for field: " + field.getName() + " with not null annotation");
-        }
+    private Field getPrimaryKeyField(Class<?> modelClass) {
+        return fieldReflector.getPrimaryKeyField(modelClass);
+    }
 
-        if (field.isAnnotationPresent(MaxLength.class)) {
-            if (fieldValue instanceof String) {
-                int maxLength = field.getAnnotation(MaxLength.class).value();
-
-                if (((String) fieldValue).length() > maxLength) {
-                    fieldValue = ((String) fieldValue).substring(0, maxLength);
-                }
-
-            } else {
-                throw new IllegalArgumentException("Field: " + field.getName() + " with max length annotation is not a String!");
-            }
-        }
-        return fieldValue;
+    private <T> Object getPrimaryKeyValue(T model) throws IllegalAccessException {
+        return fieldReflector.getPrimaryKeyValue(model);
     }
 }

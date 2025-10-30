@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This interface marks an attribute to be not null by the database.<br>
+ * This annotation marks an attribute to be not null by the database.<br>
  * Parser will enforce all fields with this notation to be initialized.<br>
  * If an attribute already has {@link dbConnect.models.autogen.AutomaticField} annotation, it will take priority over this annotation.
  *

@@ -1,14 +1,12 @@
 package dbConnect;
 
-import dbConnect.execution.DeleteParser;
-import dbConnect.execution.InsertParser;
-import dbConnect.execution.RetrieveParser;
-import dbConnect.execution.UpdateParser;
+import dbConnect.execution.*;
+import dbConnect.models.enums.FetchMethod;
 import dbConnect.query.ConnectorString;
 import dbConnect.query.MongoDBQuery;
 import dbConnect.query.SqlDBQuery;
-
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,13 +22,18 @@ import java.util.List;
  *      <li>{@link #initCheck()} check if {@link DBConnect} is initialized yet.</li>
  *      <li>{@link #retrieve(Class, String, Object...)} get certain data from a table.</li>
  *      <li>{@link #retrieveAll(Class)} get all data from a certain table.</li>
+ *      <li>{@link #retrieveRelationships(Class, String, Object...)} get relating data from certain tables.</li>
+ *      <li>{@link #retrieveAllRelationships(Class)} get all data and that of the relationship from certain tables.</li>
+ *      <li>{@link #retrieveRelated(Object, String)} get all data of the relationship.</li>
+ *      <li>{@link #lazyLoadRelationships(Object)} load relationship of a model passively.</li>
  *      <li>{@link #insert(Object)} insert data to a certain table.</li>
+ *      <li>{@link #insertRelationships(Object)} insert relating data to certain tables.</li>
  *      <li>{@link #update(Object)} update data to a certain row in a table.</li>
  *      <li>{@link #delete(Object)} delete data from a certain row in a table.</li>
  * </ul>
+ * <i>Table also mean Collection in the context of MongoDB.</i>
  * </div>
  */
-
 public class DBConnect {
     /**
      * A static instance of {@link SqlDBQuery}.
@@ -150,14 +153,7 @@ public class DBConnect {
      */
     public static <T> List<T> retrieve(Class<T> modelClass, String conditions, Object... params) {
         initCheck();
-        RetrieveParser retrieveParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            retrieveParser = new RetrieveParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            retrieveParser = new RetrieveParser(MongoDBQuery);
-        }
+        RetrieveParser retrieveParser = newRetrieveParser();
 
         try {
             assert retrieveParser != null;
@@ -169,7 +165,36 @@ public class DBConnect {
     }
 
     /**
-     * A method to get data from the database. It uses the input class to determine what table to pull from.
+     * A method to get data from the database.
+     * It uses the input class and established relationship fields of the model to determine related tables to pull data from.
+     *
+     * @param modelClass a user desired data model class extending {@link DataModel}.<br>
+     *                   Call ({@code DataModel.class}).
+     * @param conditions conditions on how to search, using {@code ?} as placeholders.
+     * @param params value of mentioned conditions in order.
+     * @param <T> type of the data model to retrieve.
+     * @return List of the desired object. If no data is found, an empty list is returned.
+     */
+    public static <T> List<T> retrieveRelationships(Class<T> modelClass, String conditions, Object... params) {
+        initCheck();
+        List<T> models = retrieve(modelClass, conditions, params);
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            assert relationParser != null;
+            for (T model : models) {
+                relationParser.loadRelationships(model, FetchMethod.EAGER);
+            }
+        } catch (Exception e) {
+            System.out.println("Failure during loading relationships: " + e.getMessage());
+        }
+
+        return models;
+    }
+
+    /**
+     * A method to get data from the database.
+     * It uses the input class to determine what table to pull from.
      * This method allows pulling all data of a model.
      *
      * @param modelClass a user desired data model class extending {@link DataModel}.<br>
@@ -182,29 +207,81 @@ public class DBConnect {
     }
 
     /**
+     * A method to get data from the database.
+     * It uses the input class and established relationship fields of the model to determine related tables to pull data from.
+     * This method allows pulling all data of a model.
+     *
+     * @param modelClass a user desired data model class extending {@link DataModel}.<br>
+     *                   Call ({@code DataModel.class}).
+     * @param <T> type of the data model to retrieve.
+     * @return List of the desired object. If no data is found, an empty list is returned.
+     */
+    public static <T> List<T> retrieveAllRelationships(Class<T> modelClass) {
+        return retrieveRelationships(modelClass, null);
+    }
+
+    /**
+     * A method to get data from the database.
+     * It uses the input class and established relationship fields of the model to determine related tables to pull data from.
+     * This method allows pulling designated model and its related model's data that the foreign key point to.
+     *
+     * @param model a user desired a data model object extending {@link DataModel}.
+     * @param foreignKeyName the name of the field that hold the related model's instance(s).
+     * @return List of the related data model instances. The list is empty on error or no related model's data found.
+     * @param <T> type of the designated data model.
+     * @param <R> type of the related data model.
+     */
+    public static <T, R> List<R> retrieveRelated(T model, String foreignKeyName) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            return relationParser.getRelatedRelation(model, foreignKeyName);
+        } catch (Exception e) {
+            System.out.println("Failure during related data selection: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * A method to load related data of a relationship from the database passively.
+     * This method will load relationships that were marked with {@code LAZY} fetch method.
+     *
+     * @param model a user desired a data model object extending {@link DataModel}
+     * @return true if the relationships were loaded successfully.
+     * @param <T> type of the data model.
+     */
+    public static <T> boolean lazyLoadRelationships(T model) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            assert relationParser != null;
+            relationParser.loadRelationships(model, FetchMethod.LAZY);
+            return true;
+        } catch (Exception e) {
+            System.out.println("Failure during lazy loading relationships " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * A method to insert data to the database.
      * It uses the input class to determine what table to push to.
      *
-     * @param dataModelObject a user desired a data model object extending {@link DataModel}, carrying data that need to be inserted.
+     * @param model a designated data model instance extending {@link DataModel}, carrying data that need to be inserted.
      * @param <T> type of the data model to insert.
      * @return {@code true} if insert successfully.<br>
      *          {@code false} if insert failed. <br>
      *          Insert successful state is determined by the inserted row count.
      */
-    public static <T> boolean insert(T dataModelObject) {
+    public static <T> boolean insert(T model) {
         initCheck();
-        InsertParser insertParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            insertParser = new InsertParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            insertParser = new InsertParser(MongoDBQuery);
-        }
+        InsertParser insertParser = newInsertParser();
 
         try {
             assert insertParser != null;
-            int successRow = insertParser.insert(dataModelObject);
+            int successRow = insertParser.insert(model);
             return successRow > 0;
         } catch (SQLException | IllegalAccessException e) {
             System.out.println("Failure during insertion: " + e.getMessage());
@@ -213,10 +290,33 @@ public class DBConnect {
     }
 
     /**
+     * A method to insert data to the database.
+     * It uses the input class and established relationship fields of the model to determine related tables to push to.
+     *
+     * @param model a designated data model instance extending {@link DataModel}, carrying data that need to be inserted.
+     * @return {@code true} if insert successfully.<br>
+     *          {@code false} if insert failed. <br>
+     *          Insert successful state is determined by the inserted row count of this model and the related model.
+     * @param <T> type of the data model to insert.
+     * @since 2.5
+     */
+    public static <T> boolean insertRelationships(T model) {
+        initCheck();
+        RelationParser relationParser = newRelationParser();
+
+        try {
+            return relationParser.saveRelationships(model);
+        } catch (Exception e) {
+            System.out.println("Failure during relationship insertion: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * A method to update data to the database.
      * It uses the input class to determine what row in a table to update.
      *
-     * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
+     * @param model a designated data model instance extending {@link DataModel}, carrying data that need to be updated.
      * @param <T> type of the data model to update.
      * @return {@code true} if update successfully.<br>
      *          {@code false} if update failed. <br>
@@ -224,14 +324,7 @@ public class DBConnect {
      */
     public static <T> boolean update(T model) {
         initCheck();
-        UpdateParser updateParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            updateParser = new UpdateParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            updateParser = new UpdateParser(MongoDBQuery);
-        }
+        UpdateParser updateParser = newUpdateParser();
 
         try {
             assert updateParser != null;
@@ -247,7 +340,7 @@ public class DBConnect {
      * A method to update data to the database.
      * It uses the input class to determine what row in a table to update.
      *
-     * @param model a user desired {@code dataModel} object, carrying data that need to be updated.
+     * @param model a designated data model instance extending {@link DataModel}, carrying data that need to be updated.
      * @param conditions a string of conditions to perform update on.
      * @param params value of each condition in order.
      * @param <T> type of the data model to update.
@@ -257,14 +350,7 @@ public class DBConnect {
      */
     public static <T> boolean update(T model, String conditions, Object... params) {
         initCheck();
-        UpdateParser updateParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            updateParser = new UpdateParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            updateParser = new UpdateParser(MongoDBQuery);
-        }
+        UpdateParser updateParser = newUpdateParser();
 
         try {
             assert updateParser != null;
@@ -280,7 +366,7 @@ public class DBConnect {
      * A method to delete data to the database.
      * It uses the input class to determine what row in a table to delete.
      *
-     * @param model a user desired {@code dataModel} object, must contain at least the primary key field initiated.
+     * @param model a designated data model instance extending {@link DataModel}, must contain at least the primary key field initiated.
      * @param <T> type of the data model to delete.
      * @return {@code true} if delete successfully.<br>
      *          {@code false} if delete failed. <br>
@@ -288,14 +374,7 @@ public class DBConnect {
      */
     public static <T> boolean delete(T model) {
         initCheck();
-        DeleteParser deleteParser = null;
-
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            deleteParser = new DeleteParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            deleteParser = new DeleteParser(MongoDBQuery);
-        }
+        DeleteParser deleteParser = newDeleteParser();
 
         try {
             assert deleteParser != null;
@@ -311,7 +390,7 @@ public class DBConnect {
      * A method to delete data to the database.
      * It uses the input class to determine what row in a table to delete.
      *
-     * @param model a user desired {@code dataModel} object.
+     * @param model a designated data model instance extending {@link DataModel}.
      * @param conditions a string of conditions to perform delete on.
      * @param params value of each condition in order.
      * @param <T> type of the data model to delete.
@@ -321,14 +400,8 @@ public class DBConnect {
      */
     public static <T> boolean delete(T model, String conditions, Object... params) {
         initCheck();
-        DeleteParser deleteParser = null;
+        DeleteParser deleteParser = newDeleteParser();
 
-        if (MongoDBQuery == null && SQLdBQuery != null) {
-            deleteParser = new DeleteParser(SQLdBQuery);
-        }
-        else if (MongoDBQuery != null && SQLdBQuery == null) {
-            deleteParser = new DeleteParser(MongoDBQuery);
-        }
         try {
             assert deleteParser != null;
             int successRow = deleteParser.delete(model, conditions, params);
@@ -337,6 +410,71 @@ public class DBConnect {
             System.out.println("Failure during deletion: " + e.getMessage());
             return false;
         }
+    }
+
+    private static RetrieveParser newRetrieveParser() {
+        RetrieveParser retrieveParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            retrieveParser = new RetrieveParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            retrieveParser = new RetrieveParser(MongoDBQuery);
+        }
+
+        return retrieveParser;
+    }
+
+    private static InsertParser newInsertParser() {
+        InsertParser insertParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            insertParser = new InsertParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            insertParser = new InsertParser(MongoDBQuery);
+        }
+
+        return insertParser;
+    }
+
+    private static UpdateParser newUpdateParser() {
+        UpdateParser updateParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            updateParser = new UpdateParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            updateParser = new UpdateParser(MongoDBQuery);
+        }
+
+        return updateParser;
+    }
+
+    private static DeleteParser newDeleteParser() {
+        DeleteParser deleteParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            deleteParser = new DeleteParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            deleteParser = new DeleteParser(MongoDBQuery);
+        }
+
+        return deleteParser;
+    }
+
+    private static RelationParser newRelationParser() {
+        RelationParser relationParser = null;
+
+        if (MongoDBQuery == null && SQLdBQuery != null) {
+            relationParser = new RelationParser(SQLdBQuery);
+        }
+        else if (MongoDBQuery != null && SQLdBQuery == null) {
+            relationParser = new RelationParser(MongoDBQuery);
+        }
+
+        return relationParser;
     }
 }
 

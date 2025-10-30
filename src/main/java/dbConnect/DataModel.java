@@ -1,6 +1,7 @@
 package dbConnect;
 
 
+import dbConnect.mapper.AutomaticMapper;
 import dbConnect.mapper.DocumentInterface;
 import dbConnect.mapper.ResultSetInterface;
 import dbConnect.models.enums.Collection;
@@ -95,13 +96,35 @@ public abstract class DataModel<T> {
      * A method uses to return the Data model mapper method.
      * This one is for SQL {@link java.sql.ResultSet}.
      * @return The SQL mapper method of this class.
+     * @since 2.5
+     * <p>
+     * Mapping is now automated using reflection.
+     * Marking a field as {@code transient} will exclude it from mapping.<br>
+     * {@link AutomaticMapper} will cache the mapping after first load to improve performance.
+     * <p>
+     * <b>Override this method to manually map the Data Model.</b>
+     * @see AutomaticMapper#getSQLMapper(Class)
      */
-    public abstract ResultSetInterface<T> getTableMap();
+    @SuppressWarnings("unchecked")
+    public ResultSetInterface<T> getTableMap() {
+        return AutomaticMapper.getSQLMapper((Class<T>) this.getClass());
+    }
 
     /**
      * A method uses to return the Data model mapper method.
      * This one is for NoSQL {@link org.bson.Document}.
      * @return The NoSQL mapper method of this class.
+     * @since 2.5
+     * <p>
+     * Mapping is now automated using reflection.
+     * Marking a field as {@code transient} will exclude it from mapping.<br>
+     * {@link AutomaticMapper} will cache the mapping after first load to improve performance.
+     * <p>
+     * <b>Override this method to manually map the Data Model.</b>
+     * @see AutomaticMapper#getMongoMapper(Class)
      */
-    public abstract DocumentInterface<T> getCollectionMap();
+    @SuppressWarnings("unchecked")
+    public DocumentInterface<T> getCollectionMap() {
+        return AutomaticMapper.getMongoMapper((Class<T>) this.getClass());
+    }
 }
